@@ -32,7 +32,20 @@ const ProdutoDetalhe = () => {
             <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded">{product.category}</span>
             <h1 className="font-heading text-3xl text-foreground tracking-wider mt-3">{product.name}</h1>
             <p className="text-primary font-heading text-2xl mt-3">{product.price}</p>
-            <p className="mt-4 text-muted-foreground leading-relaxed">{product.description}</p>
+            <p className="mt-4 text-muted-foreground leading-relaxed">{product.fullDescription || product.description}</p>
+            {product.benefits && product.benefits.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3">Benefícios</h3>
+                <ul className="space-y-2">
+                  {product.benefits.map((b) => (
+                    <li key={b} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="mt-6">
               <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3">Especificações</h3>
               <ul className="space-y-2">

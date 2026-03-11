@@ -31,7 +31,12 @@ const EbookDetalhe = () => {
           <div>
             <h1 className="font-heading text-3xl text-foreground tracking-wider">{ebook.title}</h1>
             <p className="text-primary mt-2">por {ebook.author}</p>
-            <p className="mt-4 text-muted-foreground leading-relaxed">{ebook.description}</p>
+            <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+              <span>{ebook.pages} páginas</span>
+              <span>•</span>
+              <span>{ebook.category}</span>
+            </div>
+            <p className="mt-4 text-muted-foreground leading-relaxed">{ebook.synopsis || ebook.description}</p>
             <button className="mt-8 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:opacity-90 transition-opacity inline-flex items-center gap-2">
               <Download size={16} /> Baixar E-book
             </button>
