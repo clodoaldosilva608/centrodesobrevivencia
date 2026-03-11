@@ -155,6 +155,7 @@ const Index = () => {
             >
               <div className="flex items-center justify-between mb-3">
                 <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  c.difficulty === "Extremo" ? "bg-destructive/30 text-destructive" :
                   c.difficulty === "Difícil" ? "bg-destructive/20 text-destructive" :
                   c.difficulty === "Médio" ? "bg-primary/20 text-primary" :
                   "bg-accent/30 text-accent-foreground"
