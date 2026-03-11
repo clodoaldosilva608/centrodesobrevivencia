@@ -1,0 +1,156 @@
+export const products = [
+  {
+    id: "mochila-tatica",
+    name: "Mochila Tática 50L",
+    category: "Transporte",
+    description: "Mochila militar resistente com múltiplos compartimentos para expedições longas.",
+    price: "R$ 389,90",
+    image: "https://images.unsplash.com/photo-1622260614153-03223fb72052?w=600&h=450&fit=crop",
+    specs: ["50 litros", "Nylon 900D", "Impermeável", "Sistema MOLLE"],
+  },
+  {
+    id: "canivete-multiuso",
+    name: "Canivete Multiuso 12 Funções",
+    category: "Ferramentas",
+    description: "Canivete de aço inoxidável com 12 ferramentas essenciais para sobrevivência.",
+    price: "R$ 129,90",
+    image: "https://images.unsplash.com/photo-1567361808960-dec9cb578182?w=600&h=450&fit=crop",
+    specs: ["Aço inox 440C", "12 funções", "Trava de segurança", "Bainha inclusa"],
+  },
+  {
+    id: "lanterna-tatica",
+    name: "Lanterna Tática 2000 Lumens",
+    category: "Iluminação",
+    description: "Lanterna LED de alta potência com zoom e modos SOS.",
+    price: "R$ 89,90",
+    image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&h=450&fit=crop",
+    specs: ["2000 lumens", "LED CREE", "5 modos", "À prova d'água"],
+  },
+  {
+    id: "fogareiro-portatil",
+    name: "Fogareiro Portátil Compacto",
+    category: "Cozinha",
+    description: "Fogareiro a gás ultracompacto para cozinhar em qualquer ambiente.",
+    price: "R$ 159,90",
+    image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&h=450&fit=crop",
+    specs: ["Peso: 230g", "Ignição automática", "Regulagem de chama", "Compatível com butano"],
+  },
+  {
+    id: "kit-primeiros-socorros",
+    name: "Kit Primeiros Socorros Tático",
+    category: "Segurança",
+    description: "Kit completo com 120 itens para emergências em campo.",
+    price: "R$ 199,90",
+    image: "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=600&h=450&fit=crop",
+    specs: ["120 itens", "Bolsa MOLLE", "Torniquete", "Bandagens variadas"],
+  },
+  {
+    id: "filtro-agua",
+    name: "Filtro de Água Portátil",
+    category: "Hidratação",
+    description: "Filtra até 4000 litros de água, removendo 99,9% das bactérias.",
+    price: "R$ 249,90",
+    image: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=600&h=450&fit=crop",
+    specs: ["4000L capacidade", "0.01 micron", "Sem BPA", "Peso: 65g"],
+  },
+];
+
+export const ebooks = [
+  {
+    id: "manual-sobrevivencia-selva",
+    title: "Manual de Sobrevivência na Selva",
+    author: "Carlos Mendes",
+    description: "Guia completo com técnicas ancestrais e modernas para sobreviver em ambientes de selva tropical.",
+    image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=560&fit=crop",
+  },
+  {
+    id: "bushcraft-iniciantes",
+    title: "Bushcraft para Iniciantes",
+    author: "Ana Ribeiro",
+    description: "Aprenda desde o básico: fogo, abrigo, água e navegação na natureza.",
+    image: "https://images.unsplash.com/photo-1476611338391-6f395a0ebc7b?w=400&h=560&fit=crop",
+  },
+  {
+    id: "acampamento-selvagem",
+    title: "Guia de Acampamento Selvagem",
+    author: "Pedro Alves",
+    description: "Tudo sobre acampar em locais remotos com segurança e conforto mínimo.",
+    image: "https://images.unsplash.com/photo-1504851149312-7a075b496cc7?w=400&h=560&fit=crop",
+  },
+  {
+    id: "encontrando-agua",
+    title: "Encontrando Água na Natureza",
+    author: "Marcos Silva",
+    description: "Técnicas para localizar, purificar e armazenar água em situações de sobrevivência.",
+    image: "https://images.unsplash.com/photo-1432405972618-c6b0cfba8673?w=400&h=560&fit=crop",
+  },
+  {
+    id: "primeiros-socorros-extremos",
+    title: "Primeiros Socorros em Situações Extremas",
+    author: "Dra. Juliana Costa",
+    description: "Procedimentos médicos de emergência quando não há hospitais por perto.",
+    image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+  },
+];
+
+export const games = [
+  {
+    id: "simulador-floresta",
+    name: "Simulador de Sobrevivência na Floresta",
+    description: "Sobreviva 30 dias na floresta. Gerencie recursos, construa abrigos e enfrente os elementos.",
+    image: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=600&h=450&fit=crop",
+  },
+  {
+    id: "construa-abrigo",
+    name: "Construa seu Abrigo",
+    description: "Projete e construa abrigos usando materiais naturais disponíveis no ambiente.",
+    image: "https://images.unsplash.com/photo-1510672981848-a1c4f1cb5ccf?w=600&h=450&fit=crop",
+  },
+  {
+    id: "gerenciamento-recursos",
+    name: "Gerenciamento de Recursos",
+    description: "Administre seus suprimentos limitados para sobreviver o máximo possível.",
+    image: "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=600&h=450&fit=crop",
+  },
+  {
+    id: "exploracao-territorio",
+    name: "Exploração de Território",
+    description: "Explore um vasto território desconhecido, mapeie recursos e evite perigos.",
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=450&fit=crop",
+  },
+];
+
+export const challenges = [
+  {
+    id: 1,
+    title: "Acender Fogo sem Fósforo",
+    description: "Aprenda e demonstre como iniciar fogo usando apenas materiais naturais.",
+    difficulty: "Difícil",
+    xp: 150,
+    deadline: "7 dias",
+  },
+  {
+    id: 2,
+    title: "Construir Abrigo Simples",
+    description: "Construa um abrigo funcional usando galhos, folhas e cordas naturais.",
+    difficulty: "Médio",
+    xp: 100,
+    deadline: "5 dias",
+  },
+  {
+    id: 3,
+    title: "Encontrar Água Potável",
+    description: "Identifique e purifique uma fonte de água na natureza.",
+    difficulty: "Fácil",
+    xp: 75,
+    deadline: "3 dias",
+  },
+  {
+    id: 4,
+    title: "Navegação por Estrelas",
+    description: "Navegue utilizando constelações e a posição do sol.",
+    difficulty: "Difícil",
+    xp: 200,
+    deadline: "7 dias",
+  },
+];
