@@ -12,6 +12,7 @@ import Jogos from "./pages/Jogos";
 import Simulador from "./pages/Simulador";
 import MapaSobrevivencia from "./pages/MapaSobrevivencia";
 import Desafios from "./pages/Desafios";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
