@@ -12,6 +12,7 @@ const navItems = [
   { label: "Simulador", path: "/simulador" },
   { label: "Mapa", path: "/mapa-sobrevivencia" },
   { label: "Desafios", path: "/desafios" },
+  { label: "Admin", path: "/admin" },
 ];
 
 const Navbar = () => {
