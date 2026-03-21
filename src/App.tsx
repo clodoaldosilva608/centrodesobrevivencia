@@ -13,6 +13,8 @@ import Simulador from "./pages/Simulador";
 import MapaSobrevivencia from "./pages/MapaSobrevivencia";
 import Desafios from "./pages/Desafios";
 import Admin from "./pages/Admin";
+import Perfil from "./pages/Perfil";
+import Comunidade from "./pages/Comunidade";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
