@@ -36,6 +36,8 @@ const App = () => (
           <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
           <Route path="/desafios" element={<Desafios />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/comunidade" element={<Comunidade />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
