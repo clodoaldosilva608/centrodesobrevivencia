@@ -13,6 +13,8 @@ import Simulador from "./pages/Simulador";
 import MapaSobrevivencia from "./pages/MapaSobrevivencia";
 import Desafios from "./pages/Desafios";
 import Admin from "./pages/Admin";
+import Perfil from "./pages/Perfil";
+import Comunidade from "./pages/Comunidade";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
           <Route path="/desafios" element={<Desafios />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/comunidade" element={<Comunidade />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

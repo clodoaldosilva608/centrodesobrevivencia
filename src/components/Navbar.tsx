@@ -12,6 +12,8 @@ const navItems = [
   { label: "Simulador", path: "/simulador" },
   { label: "Mapa", path: "/mapa-sobrevivencia" },
   { label: "Desafios", path: "/desafios" },
+  { label: "Comunidade", path: "/comunidade" },
+  { label: "Perfil", path: "/perfil" },
   { label: "Admin", path: "/admin" },
 ];
 
