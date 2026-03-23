@@ -15,6 +15,7 @@ import Desafios from "./pages/Desafios";
 import Admin from "./pages/Admin";
 import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
+import SimuladorFloresta from "./pages/SimuladorFloresta";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/ebooks" element={<Ebooks />} />
           <Route path="/ebooks/:id" element={<EbookDetalhe />} />
           <Route path="/jogos" element={<Jogos />} />
+          <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
           <Route path="/simulador" element={<Simulador />} />
           <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
           <Route path="/desafios" element={<Desafios />} />
