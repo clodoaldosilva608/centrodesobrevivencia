@@ -15,6 +15,7 @@ import Desafios from "./pages/Desafios";
 import Admin from "./pages/Admin";
 import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
+import SimuladorFloresta from "./pages/SimuladorFloresta";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
