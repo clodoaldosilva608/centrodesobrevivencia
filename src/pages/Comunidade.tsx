@@ -4,7 +4,8 @@ import Layout from "@/components/Layout";
 import Section from "@/components/Section";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2 } from "lucide-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award } from "lucide-react";
 
 interface ForumPost {
   id: string;
@@ -38,6 +39,19 @@ function loadPosts(): ForumPost[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : defaultPosts; } catch { return defaultPosts; }
 }
 
+const MOCK_LEADERBOARD = [
+  { name: "Trilheira_Maria", xp: 4250, level: 9, achievements: 7, avatar: "🏔️" },
+  { name: "Bushcraft_João", xp: 3800, level: 8, achievements: 6, avatar: "🌿" },
+  { name: "Explorador_Silva", xp: 3100, level: 7, achievements: 5, avatar: "🧭" },
+  { name: "Sobrevivente_Pedro", xp: 2600, level: 6, achievements: 4, avatar: "🔥" },
+  { name: "Bushcraft_Ana", xp: 2100, level: 5, achievements: 4, avatar: "🏕️" },
+  { name: "Aventureiro_Carlos", xp: 1500, level: 4, achievements: 3, avatar: "⛰️" },
+  { name: "Rastreador_Lucas", xp: 900, level: 2, achievements: 2, avatar: "🐾" },
+  { name: "Novato_Rafael", xp: 350, level: 1, achievements: 1, avatar: "🌱" },
+];
+
+const RANK_ICONS = [Crown, Medal, Award];
+
 const Comunidade = () => {
   const [posts, setPosts] = useState<ForumPost[]>(loadPosts);
   const [selectedCategory, setSelectedCategory] = useState("Geral");
@@ -45,8 +59,15 @@ const Comunidade = () => {
   const [newCategory, setNewCategory] = useState("Geral");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const { profile } = useUserProfile();
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(posts)); }, [posts]);
+
+  // Merge user into leaderboard
+  const leaderboard = [...MOCK_LEADERBOARD, { name: profile.name, xp: profile.xp, level: profile.level, achievements: profile.achievements.length, avatar: "👤" }]
+    .sort((a, b) => b.xp - a.xp)
+    .slice(0, 10);
 
   const filtered = selectedCategory === "Geral" ? posts : posts.filter((p) => p.category === selectedCategory);
 
@@ -93,6 +114,39 @@ const Comunidade = () => {
               {cat}
             </button>
           ))}
+        </div>
+
+        {/* Leaderboard */}
+        <div className="bg-gradient-card rounded-xl border border-border p-5 mb-8">
+          <button onClick={() => setShowLeaderboard(!showLeaderboard)} className="flex items-center gap-2 w-full">
+            <Trophy size={20} className="text-primary" />
+            <h3 className="font-heading text-lg text-foreground tracking-wider flex-1 text-left">Ranking de Sobreviventes</h3>
+            <span className="text-xs text-muted-foreground">{showLeaderboard ? "Ocultar" : "Mostrar"}</span>
+          </button>
+          {showLeaderboard && (
+            <div className="mt-4 space-y-2">
+              {leaderboard.map((user, i) => {
+                const isUser = user.name === profile.name;
+                const RankIcon = RANK_ICONS[i] || null;
+                return (
+                  <motion.div key={user.name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isUser ? "bg-primary/10 border border-primary/30" : "bg-muted/30 hover:bg-muted/50"}`}>
+                    <span className={`w-7 text-center font-heading text-sm ${i < 3 ? "text-primary" : "text-muted-foreground"}`}>
+                      {RankIcon ? <RankIcon size={18} className="mx-auto" /> : `#${i + 1}`}
+                    </span>
+                    <span className="text-lg">{user.avatar}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${isUser ? "text-primary" : "text-foreground"}`}>
+                        {user.name} {isUser && <span className="text-xs text-primary/70">(você)</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Nível {user.level} · {user.achievements} conquistas</p>
+                    </div>
+                    <span className="font-heading text-sm text-primary whitespace-nowrap">{user.xp.toLocaleString()} XP</span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* New post */}
