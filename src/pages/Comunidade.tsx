@@ -4,7 +4,8 @@ import Layout from "@/components/Layout";
 import Section from "@/components/Section";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2 } from "lucide-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award } from "lucide-react";
 
 interface ForumPost {
   id: string;
