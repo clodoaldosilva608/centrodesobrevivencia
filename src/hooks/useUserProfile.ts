@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAchievementNotification } from "@/contexts/AchievementNotifContext";
+
 export interface Achievement {
   id: string;
   title: string;
@@ -61,9 +62,19 @@ export function useUserProfile() {
     }
   });
 
+  let notifContext: { notify: (a: Achievement) => void } | null = null;
+  try { notifContext = useAchievementNotification(); } catch { /* outside provider */ }
+  const notifyRef = useRef(notifContext?.notify);
+  notifyRef.current = notifContext?.notify;
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
   }, [profile]);
+
+  const notifyNew = useCallback((prev: Achievement[], next: Achievement[]) => {
+    const newOnes = next.filter((a) => !prev.find((p) => p.id === a.id));
+    newOnes.forEach((a) => notifyRef.current?.(a));
+  }, []);
 
   const addXP = useCallback((amount: number) => {
     setProfile((prev) => {
@@ -71,7 +82,6 @@ export function useUserProfile() {
       const newLevel = calcLevel(newXP);
       let newAchievements = [...prev.achievements];
 
-      // Check level achievements
       if (newLevel >= 10 && !newAchievements.find((a) => a.id === "master")) {
         const ach = ACHIEVEMENTS_LIST.find((a) => a.id === "master")!;
         newAchievements.push({ ...ach, unlockedAt: new Date().toISOString() });
@@ -85,9 +95,10 @@ export function useUserProfile() {
         newAchievements.push({ ...ach, unlockedAt: new Date().toISOString() });
       }
 
+      notifyNew(prev.achievements, newAchievements);
       return { ...prev, xp: newXP, level: newLevel, achievements: newAchievements };
     });
-  }, []);
+  }, [notifyNew]);
 
   const completeChallenge = useCallback(() => {
     setProfile((prev) => {
@@ -107,9 +118,10 @@ export function useUserProfile() {
         newAchievements.push({ ...ach, unlockedAt: new Date().toISOString() });
       }
 
+      notifyNew(prev.achievements, newAchievements);
       return { ...prev, challengesCompleted: completed, achievements: newAchievements };
     });
-  }, []);
+  }, [notifyNew]);
 
   const playGame = useCallback(() => {
     setProfile((prev) => {
@@ -121,9 +133,10 @@ export function useUserProfile() {
         newAchievements.push({ ...ach, unlockedAt: new Date().toISOString() });
       }
 
+      notifyNew(prev.achievements, newAchievements);
       return { ...prev, gamesPlayed: played, achievements: newAchievements };
     });
-  }, []);
+  }, [notifyNew]);
 
   const updateName = useCallback((name: string) => {
     setProfile((prev) => ({ ...prev, name }));
