@@ -17,11 +17,13 @@ import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
 import SimuladorFloresta from "./pages/SimuladorFloresta";
 import NotFound from "./pages/NotFound";
+import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <AchievementNotifProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
