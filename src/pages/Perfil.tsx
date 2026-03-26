@@ -2,19 +2,48 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDailyMissions } from "@/hooks/useDailyMissions";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock } from "lucide-react";
+import { toast } from "sonner";
+
+const BADGE_RARITY: Record<string, { label: string; color: string; border: string; bg: string }> = {
+  "first-challenge": { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" },
+  explorer:          { label: "Prata", color: "text-slate-300", border: "border-slate-400/50", bg: "bg-slate-700/20" },
+  "fire-master":     { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" },
+  "shelter-expert":  { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" },
+  "water-finder":    { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" },
+  "survivor-10":     { label: "Prata", color: "text-slate-300", border: "border-slate-400/50", bg: "bg-slate-700/20" },
+  gamer:             { label: "Prata", color: "text-slate-300", border: "border-slate-400/50", bg: "bg-slate-700/20" },
+  master:            { label: "Ouro", color: "text-yellow-400", border: "border-yellow-400/50", bg: "bg-yellow-900/20" },
+  veteran:           { label: "Ouro", color: "text-yellow-400", border: "border-yellow-400/50", bg: "bg-yellow-900/20" },
+  legend:            { label: "Ouro", color: "text-yellow-400", border: "border-yellow-400/50", bg: "bg-yellow-900/20" },
+};
 
 const Perfil = () => {
   const { profile, addXP, completeChallenge, playGame, updateName, xpProgress, currentLevelXP, xpForNextLevel, allAchievements } = useUserProfile();
+  const dailyMissions = useDailyMissions();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
 
-  const saveName = () => {
-    updateName(nameInput);
-    setEditingName(false);
+  const saveName = () => { updateName(nameInput); setEditingName(false); };
+
+  const handleCompleteMission = (id: string) => {
+    const xp = dailyMissions.completeMission(id);
+    if (xp > 0) {
+      addXP(xp);
+      toast.success(`Missão completa! +${xp} XP`);
+      // Check if all done
+      setTimeout(() => {
+        const bonus = dailyMissions.claimAllCompletedBonus();
+        if (bonus > 0) {
+          addXP(bonus);
+          toast.success(`🎉 Todas as missões completas! +${bonus} XP bônus!`);
+        }
+      }, 500);
+    }
   };
 
   return (
@@ -39,7 +68,6 @@ const Perfil = () => {
                 )}
               </div>
               <p className="text-primary font-heading text-lg">Nível {profile.level}</p>
-
               <div className="mt-3 max-w-sm mx-auto md:mx-0">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>{currentLevelXP} / {xpForNextLevel} XP</span>
@@ -72,7 +100,49 @@ const Perfil = () => {
           ))}
         </div>
 
-        {/* Quick Actions (for testing) */}
+        {/* Daily Missions */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock size={20} className="text-primary" />
+              <h2 className="font-heading text-xl text-foreground tracking-wider">Missões Diárias</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{dailyMissions.completedCount}/{dailyMissions.totalMissions} completas</span>
+          </div>
+          <Progress value={(dailyMissions.completedCount / dailyMissions.totalMissions) * 100} className="h-2 mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {dailyMissions.missions.map((m) => (
+              <motion.div key={m.id} whileHover={{ scale: 1.02 }}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${m.completed ? "border-primary/40 bg-primary/5 opacity-70" : "border-border hover:border-primary/30"}`}>
+                <span className="text-2xl">{m.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{m.title}</p>
+                  <p className="text-xs text-muted-foreground">{m.description}</p>
+                </div>
+                {m.completed ? (
+                  <Check size={16} className="text-primary shrink-0" />
+                ) : (
+                  <Button size="sm" variant="outline" className="shrink-0 text-xs h-7" onClick={() => handleCompleteMission(m.id)}>
+                    +{m.xpReward} XP
+                  </Button>
+                )}
+              </motion.div>
+            ))}
+          </div>
+          {dailyMissions.allCompleted && !dailyMissions.allBonusClaimed && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 text-center">
+              <Button onClick={() => { const b = dailyMissions.claimAllCompletedBonus(); if (b > 0) { addXP(b); toast.success(`🎉 +${b} XP bônus!`); } }} className="gap-2">
+                <Gift size={16} /> Resgatar Bônus +{dailyMissions.bonusXP} XP
+              </Button>
+            </motion.div>
+          )}
+          {dailyMissions.allBonusClaimed && (
+            <p className="text-center text-xs text-primary mt-3">✅ Todas as missões completas! Volte amanhã para novas missões.</p>
+          )}
+        </motion.div>
+
+        {/* Quick Actions */}
         <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
           <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">Ações Rápidas</h2>
           <div className="flex flex-wrap gap-3">
@@ -88,7 +158,35 @@ const Perfil = () => {
           </div>
         </div>
 
-        {/* Achievements */}
+        {/* Badges / Medals */}
+        <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
+          <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">
+            🎖️ Medalhas ({profile.achievements.length} / {allAchievements.length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {allAchievements.map((ach) => {
+              const unlocked = profile.achievements.find((a) => a.id === ach.id);
+              const rarity = BADGE_RARITY[ach.id] || { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" };
+              return (
+                <motion.div key={ach.id} whileHover={unlocked ? { scale: 1.1, rotate: 3 } : {}}
+                  className={`relative flex flex-col items-center p-3 rounded-xl border-2 text-center transition-all ${
+                    unlocked ? `${rarity.border} ${rarity.bg}` : "border-border/30 bg-muted/10 opacity-40 grayscale"
+                  }`}>
+                  <span className="text-3xl mb-1">{ach.icon}</span>
+                  <p className="text-[10px] font-semibold text-foreground leading-tight">{ach.title}</p>
+                  <span className={`text-[9px] font-bold mt-1 ${rarity.color}`}>{rarity.label}</span>
+                  {unlocked && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                      <Check size={10} className="text-primary-foreground" />
+                    </motion.div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Achievements List */}
         <div className="bg-gradient-card rounded-xl border border-border p-6">
           <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">
             Conquistas ({profile.achievements.length} / {allAchievements.length})
