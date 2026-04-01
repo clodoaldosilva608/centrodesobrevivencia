@@ -49,6 +49,8 @@ const App = () => {
           </AnimatePresence>
           {!showSplash && (
             <BrowserRouter>
+              <OnboardingTutorial />
+              <EngagementNotification />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />
