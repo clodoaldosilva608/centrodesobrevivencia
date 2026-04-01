@@ -21,6 +21,8 @@ import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
 import SimuladorFloresta from "./pages/SimuladorFloresta";
 import NotFound from "./pages/NotFound";
+import OnboardingTutorial from "./components/OnboardingTutorial";
+import EngagementNotification from "./components/EngagementNotification";
 import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
 
 const queryClient = new QueryClient();
