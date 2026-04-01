@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useDailyMissions } from "@/hooks/useDailyMissions";
+import { useStreak } from "@/hooks/useStreak";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History } from "lucide-react";
 import { toast } from "sonner";
 
 const BADGE_RARITY: Record<string, { label: string; color: string; border: string; bg: string }> = {
@@ -25,25 +27,42 @@ const BADGE_RARITY: Record<string, { label: string; color: string; border: strin
 const Perfil = () => {
   const { profile, addXP, completeChallenge, playGame, updateName, xpProgress, currentLevelXP, xpForNextLevel, allAchievements } = useUserProfile();
   const dailyMissions = useDailyMissions();
+  const streak = useStreak();
+  const { entries, logActivity } = useActivityLog();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
 
-  const saveName = () => { updateName(nameInput); setEditingName(false); };
+  const saveName = () => { updateName(nameInput); setEditingName(false); logActivity("Alterou o nome do perfil", "✏️"); };
 
   const handleCompleteMission = (id: string) => {
     const xp = dailyMissions.completeMission(id);
     if (xp > 0) {
       addXP(xp);
+      logActivity(`Completou missão diária (+${xp} XP)`, "✅", xp);
       toast.success(`Missão completa! +${xp} XP`);
-      // Check if all done
       setTimeout(() => {
         const bonus = dailyMissions.claimAllCompletedBonus();
         if (bonus > 0) {
           addXP(bonus);
+          logActivity(`Bônus de todas as missões (+${bonus} XP)`, "🎉", bonus);
           toast.success(`🎉 Todas as missões completas! +${bonus} XP bônus!`);
         }
       }, 500);
     }
+  };
+
+  const handleClaimStreak = () => {
+    const xp = streak.claimDailyBonus();
+    if (xp > 0) {
+      addXP(xp);
+      logActivity(`Bônus de streak ${streak.currentStreak} dias (+${xp} XP)`, "🔥", xp);
+      toast.success(`🔥 Streak ${streak.currentStreak} dias! +${xp} XP`);
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -83,8 +102,8 @@ const Perfil = () => {
           </div>
         </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Stats + Streak */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
             { label: "Nível", value: profile.level, icon: Star },
             { label: "XP Total", value: profile.xp, icon: Zap },
@@ -98,6 +117,19 @@ const Perfil = () => {
               <p className="text-xs text-muted-foreground">{s.label}</p>
             </motion.div>
           ))}
+          {/* Streak card */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-card rounded-lg border border-primary/30 p-4 text-center relative overflow-hidden">
+            <Flame className="h-6 w-6 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-heading text-foreground">{streak.currentStreak}</p>
+            <p className="text-xs text-muted-foreground">Streak (dias)</p>
+            {!streak.todayClaimed && streak.currentStreak > 0 && (
+              <Button size="sm" className="mt-2 h-6 text-[10px]" onClick={handleClaimStreak}>
+                Resgatar XP
+              </Button>
+            )}
+            {streak.todayClaimed && <p className="text-[10px] text-primary mt-1">✅ Resgatado</p>}
+          </motion.div>
         </div>
 
         {/* Daily Missions */}
@@ -132,7 +164,7 @@ const Perfil = () => {
           </div>
           {dailyMissions.allCompleted && !dailyMissions.allBonusClaimed && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 text-center">
-              <Button onClick={() => { const b = dailyMissions.claimAllCompletedBonus(); if (b > 0) { addXP(b); toast.success(`🎉 +${b} XP bônus!`); } }} className="gap-2">
+              <Button onClick={() => { const b = dailyMissions.claimAllCompletedBonus(); if (b > 0) { addXP(b); logActivity(`Bônus missões diárias (+${b} XP)`, "🎁", b); toast.success(`🎉 +${b} XP bônus!`); } }} className="gap-2">
                 <Gift size={16} /> Resgatar Bônus +{dailyMissions.bonusXP} XP
               </Button>
             </motion.div>
@@ -146,17 +178,42 @@ const Perfil = () => {
         <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
           <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">Ações Rápidas</h2>
           <div className="flex flex-wrap gap-3">
-            <Button size="sm" onClick={() => { addXP(100); completeChallenge(); }}>
+            <Button size="sm" onClick={() => { addXP(100); completeChallenge(); logActivity("Completou um desafio (+100 XP)", "🏆", 100); }}>
               <Trophy size={14} className="mr-1" /> Completar Desafio (+100 XP)
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => { addXP(50); playGame(); }}>
+            <Button size="sm" variant="secondary" onClick={() => { addXP(50); playGame(); logActivity("Jogou um jogo (+50 XP)", "🎮", 50); }}>
               <Gamepad2 size={14} className="mr-1" /> Jogar Jogo (+50 XP)
             </Button>
-            <Button size="sm" variant="outline" onClick={() => addXP(25)}>
+            <Button size="sm" variant="outline" onClick={() => { addXP(25); logActivity("Ganhou XP bônus (+25 XP)", "⚡", 25); }}>
               <Zap size={14} className="mr-1" /> Ganhar 25 XP
             </Button>
           </div>
         </div>
+
+        {/* Activity History */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <History size={20} className="text-primary" />
+            <h2 className="font-heading text-xl text-foreground tracking-wider">Atividades Recentes</h2>
+          </div>
+          {entries.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma atividade registrada ainda. Complete missões e desafios!</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {entries.slice(0, 15).map((e) => (
+                <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg border border-border/50 hover:border-border transition-colors">
+                  <span className="text-lg">{e.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{e.action}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatTime(e.timestamp)}</p>
+                  </div>
+                  {e.xp && <span className="text-xs text-primary font-heading shrink-0">+{e.xp} XP</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
 
         {/* Badges / Medals */}
         <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
