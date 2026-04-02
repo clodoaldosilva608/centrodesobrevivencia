@@ -52,6 +52,7 @@ const App = () => {
             <BrowserRouter>
               <OnboardingTutorial />
               <EngagementNotification />
+              <PWAInstallBanner />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />
