@@ -2,6 +2,7 @@ const CACHE_NAME = "survival-hub-v1";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
+  "/offline.html",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
@@ -30,7 +31,7 @@ self.addEventListener("fetch", (event) => {
   // For navigation requests, try network first, fall back to cache
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/index.html"))
+      fetch(request).catch(() => caches.match("/offline.html"))
     );
     return;
   }
