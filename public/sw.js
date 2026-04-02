@@ -31,7 +31,7 @@ self.addEventListener("fetch", (event) => {
   // For navigation requests, try network first, fall back to cache
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/index.html"))
+      fetch(request).catch(() => caches.match("/offline.html"))
     );
     return;
   }
