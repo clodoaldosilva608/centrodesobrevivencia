@@ -2,6 +2,7 @@ const CACHE_NAME = "survival-hub-v1";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
+  "/offline.html",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
