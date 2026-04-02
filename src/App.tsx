@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
 import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => {
             <BrowserRouter>
               <OnboardingTutorial />
               <EngagementNotification />
+              <PWAInstallBanner />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />
