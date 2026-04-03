@@ -49,13 +49,16 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="lg:hidden p-2 text-foreground"
-        >
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          {/* Mobile toggle */}
+          <button
+            onClick={() => setOpen(!open)}
+            className="lg:hidden p-2 text-foreground"
+          >
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
