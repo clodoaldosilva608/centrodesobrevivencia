@@ -1,19 +1,23 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "sonner";
 import {
-  Droplets, Mountain, TreePine, AlertTriangle, Eye, Zap,
-  MapPin, Compass, Skull, Apple, Flame, Shield, X
+  Droplets, Mountain, TreePine, AlertTriangle, Zap,
+  MapPin, Compass, Skull, Apple, Flame, Shield, X, Navigation, Locate
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
+/* ───── Types ───── */
 interface MapPoint {
   id: string;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
   type: "water" | "danger" | "shelter" | "resource" | "event";
   name: string;
   description: string;
@@ -29,10 +33,10 @@ interface RandomEvent {
   options: { label: string; effect: string; xp: number; outcome: "positive" | "negative" | "neutral" }[];
 }
 
+/* ───── Random Events ───── */
 const RANDOM_EVENTS: RandomEvent[] = [
   {
-    id: "snake",
-    title: "Cobra no Caminho!",
+    id: "snake", title: "Cobra no Caminho!",
     description: "Uma cobra venenosa bloqueia sua passagem. O que você faz?",
     icon: <Skull size={24} className="text-destructive" />,
     options: [
@@ -42,8 +46,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     ],
   },
   {
-    id: "storm",
-    title: "Tempestade se Aproxima!",
+    id: "storm", title: "Tempestade se Aproxima!",
     description: "Nuvens escuras surgem no horizonte. Uma tempestade está chegando rápido.",
     icon: <Droplets size={24} className="text-primary" />,
     options: [
@@ -53,8 +56,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     ],
   },
   {
-    id: "tracks",
-    title: "Rastros de Animal",
+    id: "tracks", title: "Rastros de Animal",
     description: "Você encontrou rastros frescos no chão. Parecem ser de um animal grande.",
     icon: <Compass size={24} className="text-accent-foreground" />,
     options: [
@@ -64,8 +66,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     ],
   },
   {
-    id: "berries",
-    title: "Frutas Desconhecidas",
+    id: "berries", title: "Frutas Desconhecidas",
     description: "Você encontrou um arbusto com frutas coloridas. São comestíveis?",
     icon: <Apple size={24} className="text-primary" />,
     options: [
@@ -75,8 +76,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     ],
   },
   {
-    id: "fire",
-    title: "Incêndio Florestal!",
+    id: "fire", title: "Incêndio Florestal!",
     description: "Fumaça densa surge ao longe. O fogo está se espalhando rapidamente.",
     icon: <Flame size={24} className="text-destructive" />,
     options: [
@@ -86,8 +86,7 @@ const RANDOM_EVENTS: RandomEvent[] = [
     ],
   },
   {
-    id: "lost",
-    title: "Desorientado!",
+    id: "lost", title: "Desorientado!",
     description: "A neblina espessa fez você perder a noção de direção.",
     icon: <Compass size={24} className="text-muted-foreground" />,
     options: [
@@ -98,35 +97,79 @@ const RANDOM_EVENTS: RandomEvent[] = [
   },
 ];
 
+/* ───── Points (real coords - Amazon region) ───── */
 const initialPoints: MapPoint[] = [
-  { id: "1", x: 20, y: 22, type: "water", name: "Nascente da Serra", description: "Água cristalina brotando entre rochas. Segura para beber.", discovered: false, xpReward: 25 },
-  { id: "2", x: 55, y: 15, type: "danger", name: "Território de Onças", description: "Região com avistamentos frequentes de onças-pintadas.", discovered: false, xpReward: 40 },
-  { id: "3", x: 38, y: 48, type: "shelter", name: "Caverna do Morro", description: "Caverna natural protegida dos ventos. Ótima para acampamento.", discovered: false, xpReward: 30 },
-  { id: "4", x: 72, y: 38, type: "resource", name: "Bosque de Castanheiras", description: "Árvores com frutos comestíveis e madeira resistente.", discovered: false, xpReward: 20 },
-  { id: "5", x: 12, y: 62, type: "water", name: "Rio Escondido", description: "Rio de águas calmas. Possibilidade de pesca.", discovered: false, xpReward: 25 },
-  { id: "6", x: 48, y: 72, type: "danger", name: "Pântano Traiçoeiro", description: "Solo instável e animais peçonhentos. Evite à noite.", discovered: false, xpReward: 35 },
-  { id: "7", x: 82, y: 65, type: "shelter", name: "Ruínas Antigas", description: "Estrutura abandonada que oferece proteção contra chuva.", discovered: false, xpReward: 30 },
-  { id: "8", x: 30, y: 85, type: "resource", name: "Campo de Ervas", description: "Ervas medicinais e comestíveis em abundância.", discovered: false, xpReward: 20 },
-  { id: "9", x: 65, y: 55, type: "event", name: "Zona Misteriosa", description: "Algo estranho acontece nesta área...", discovered: false, xpReward: 0 },
-  { id: "10", x: 88, y: 20, type: "event", name: "Ponto de Encontro", description: "Vestígios de acampamento recente.", discovered: false, xpReward: 0 },
-  { id: "11", x: 42, y: 30, type: "resource", name: "Pedreira Natural", description: "Pedras afiadas úteis para ferramentas.", discovered: false, xpReward: 15 },
-  { id: "12", x: 75, y: 82, type: "water", name: "Cachoeira Oculta", description: "Cachoeira com piscina natural. Água fresca em abundância.", discovered: false, xpReward: 30 },
+  { id: "1", lat: -3.1190, lng: -60.0217, type: "water", name: "Nascente da Serra", description: "Água cristalina brotando entre rochas. Segura para beber.", discovered: false, xpReward: 25 },
+  { id: "2", lat: -3.0800, lng: -59.9600, type: "danger", name: "Território de Onças", description: "Região com avistamentos frequentes de onças-pintadas.", discovered: false, xpReward: 40 },
+  { id: "3", lat: -3.1400, lng: -59.9900, type: "shelter", name: "Caverna do Morro", description: "Caverna natural protegida dos ventos. Ótima para acampamento.", discovered: false, xpReward: 30 },
+  { id: "4", lat: -3.1000, lng: -59.9400, type: "resource", name: "Bosque de Castanheiras", description: "Árvores com frutos comestíveis e madeira resistente.", discovered: false, xpReward: 20 },
+  { id: "5", lat: -3.1600, lng: -60.0500, type: "water", name: "Rio Escondido", description: "Rio de águas calmas. Possibilidade de pesca.", discovered: false, xpReward: 25 },
+  { id: "6", lat: -3.1500, lng: -59.9700, type: "danger", name: "Pântano Traiçoeiro", description: "Solo instável e animais peçonhentos. Evite à noite.", discovered: false, xpReward: 35 },
+  { id: "7", lat: -3.0900, lng: -59.9200, type: "shelter", name: "Ruínas Antigas", description: "Estrutura abandonada que oferece proteção contra chuva.", discovered: false, xpReward: 30 },
+  { id: "8", lat: -3.1700, lng: -60.0000, type: "resource", name: "Campo de Ervas", description: "Ervas medicinais e comestíveis em abundância.", discovered: false, xpReward: 20 },
+  { id: "9", lat: -3.1300, lng: -59.9500, type: "event", name: "Zona Misteriosa", description: "Algo estranho acontece nesta área...", discovered: false, xpReward: 0 },
+  { id: "10", lat: -3.0700, lng: -59.9100, type: "event", name: "Ponto de Encontro", description: "Vestígios de acampamento recente.", discovered: false, xpReward: 0 },
+  { id: "11", lat: -3.1200, lng: -59.9800, type: "resource", name: "Pedreira Natural", description: "Pedras afiadas úteis para ferramentas.", discovered: false, xpReward: 15 },
+  { id: "12", lat: -3.0600, lng: -59.9300, type: "water", name: "Cachoeira Oculta", description: "Cachoeira com piscina natural. Água fresca em abundância.", discovered: false, xpReward: 30 },
 ];
 
+/* ───── Config ───── */
 const typeConfig = {
-  water: { icon: Droplets, color: "text-primary", bg: "bg-primary/20", border: "border-primary/40", label: "Água", pulse: "bg-primary/30" },
-  danger: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/20", border: "border-destructive/40", label: "Perigo", pulse: "bg-destructive/30" },
-  shelter: { icon: Mountain, color: "text-accent-foreground", bg: "bg-accent/30", border: "border-accent/40", label: "Abrigo", pulse: "bg-accent/30" },
-  resource: { icon: TreePine, color: "text-primary", bg: "bg-primary/10", border: "border-primary/30", label: "Recurso", pulse: "bg-primary/20" },
-  event: { icon: Zap, color: "text-yellow-400", bg: "bg-yellow-500/20", border: "border-yellow-500/40", label: "Evento", pulse: "bg-yellow-500/30" },
+  water: { icon: Droplets, color: "#3b82f6", label: "Água", emoji: "💧" },
+  danger: { icon: AlertTriangle, color: "#ef4444", label: "Perigo", emoji: "⚠️" },
+  shelter: { icon: Mountain, color: "#8b5cf6", label: "Abrigo", emoji: "🏕️" },
+  resource: { icon: TreePine, color: "#22c55e", label: "Recurso", emoji: "🌲" },
+  event: { icon: Zap, color: "#eab308", label: "Evento", emoji: "⚡" },
 };
 
+/* ───── Custom marker icons ───── */
+const createIcon = (color: string, discovered: boolean) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="32" height="42">
+    <path d="M16 0C7.2 0 0 7.2 0 16c0 12 16 26 16 26s16-14 16-26C32 7.2 24.8 0 16 0z" fill="${discovered ? color : '#6b7280'}" opacity="${discovered ? 1 : 0.6}"/>
+    <circle cx="16" cy="16" r="8" fill="white" opacity="0.9"/>
+    <circle cx="16" cy="16" r="4" fill="${discovered ? color : '#9ca3af'}"/>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: "",
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+    popupAnchor: [0, -42],
+  });
+};
+
+/* ───── Location button component ───── */
+const LocateButton = () => {
+  const map = useMap();
+  const handleLocate = () => {
+    map.locate({ setView: true, maxZoom: 14 });
+  };
+  return (
+    <button
+      onClick={handleLocate}
+      className="absolute bottom-4 right-4 z-[1000] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+      title="Minha localização"
+    >
+      <Locate size={20} />
+    </button>
+  );
+};
+
+/* ───── Main Component ───── */
 const MapaSobrevivencia = () => {
   const [points, setPoints] = useState(initialPoints);
   const [selected, setSelected] = useState<MapPoint | null>(null);
   const [activeEvent, setActiveEvent] = useState<RandomEvent | null>(null);
   const [eventResult, setEventResult] = useState<{ effect: string; xp: number; outcome: string } | null>(null);
-  const { profile, addXP } = useUserProfile();
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const { addXP } = useUserProfile();
+
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+      () => {}
+    );
+  }, []);
 
   const triggerRandomEvent = useCallback(() => {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
@@ -137,18 +180,15 @@ const MapaSobrevivencia = () => {
   const discover = (point: MapPoint) => {
     if (!point.discovered) {
       setPoints((prev) => prev.map((p) => p.id === point.id ? { ...p, discovered: true } : p));
-
       if (point.type === "event") {
         triggerRandomEvent();
         return;
       }
-
       if (point.xpReward > 0) {
         addXP(point.xpReward);
         toast.success(`📍 ${point.name} descoberto! +${point.xpReward} XP`);
       }
     }
-
     setSelected({ ...point, discovered: true });
   };
 
@@ -160,13 +200,12 @@ const MapaSobrevivencia = () => {
     }
   };
 
-  const closeEvent = () => {
-    setActiveEvent(null);
-    setEventResult(null);
-  };
+  const closeEvent = () => { setActiveEvent(null); setEventResult(null); };
 
   const discovered = points.filter((p) => p.discovered).length;
   const totalXPFromMap = points.filter((p) => p.discovered && p.xpReward > 0).reduce((sum, p) => sum + p.xpReward, 0);
+
+  const defaultCenter: [number, number] = userLocation || [-3.1190, -60.0217];
 
   return (
     <Layout>
@@ -175,9 +214,11 @@ const MapaSobrevivencia = () => {
           <h1 className="font-heading text-2xl md:text-3xl text-foreground tracking-wider text-center uppercase mb-2">
             Mapa de Sobrevivência
           </h1>
-          <p className="text-center text-muted-foreground mb-4">Explore o território, descubra recursos e enfrente eventos</p>
+          <p className="text-center text-muted-foreground mb-4 flex items-center justify-center gap-2">
+            <Navigation size={16} className="text-primary" />
+            Explore o território em tempo real
+          </p>
 
-          {/* Progress bar */}
           <div className="max-w-xs mx-auto mb-6">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>{discovered}/{points.length} descobertos</span>
@@ -192,76 +233,60 @@ const MapaSobrevivencia = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative aspect-[4/3] bg-gradient-card rounded-xl border border-border overflow-hidden shadow-lg"
+            className="relative rounded-xl border border-border overflow-hidden shadow-lg"
+            style={{ height: "500px" }}
           >
-            {/* Grid */}
-            <div className="absolute inset-0 opacity-[0.07]" style={{
-              backgroundImage: "linear-gradient(hsl(var(--muted-foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted-foreground)) 1px, transparent 1px)",
-              backgroundSize: "8.33% 8.33%"
-            }} />
+            <MapContainer
+              center={defaultCenter}
+              zoom={13}
+              className="h-full w-full z-0"
+              style={{ background: "hsl(120 5% 8%)" }}
+              zoomControl={false}
+            >
+              {/* Dark Waze-style tile layer */}
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
 
-            {/* Terrain */}
-            <div className="absolute inset-0 opacity-20" style={{
-              background: `
-                radial-gradient(ellipse at 20% 30%, hsl(140 30% 20%), transparent 45%),
-                radial-gradient(ellipse at 70% 50%, hsl(30 30% 18%), transparent 35%),
-                radial-gradient(ellipse at 50% 80%, hsl(200 30% 15%), transparent 40%),
-                radial-gradient(ellipse at 85% 25%, hsl(0 20% 20%), transparent 30%)
-              `
-            }} />
+              {/* Points of interest */}
+              {points.map((p) => {
+                const cfg = typeConfig[p.type];
+                return (
+                  <Marker
+                    key={p.id}
+                    position={[p.lat, p.lng]}
+                    icon={createIcon(cfg.color, p.discovered)}
+                    eventHandlers={{ click: () => discover(p) }}
+                  >
+                    <Popup className="survival-popup">
+                      <div className="text-sm font-bold">{p.discovered ? `${cfg.emoji} ${p.name}` : "🔍 Clique para explorar"}</div>
+                      {p.discovered && <div className="text-xs mt-1 opacity-80">{p.description}</div>}
+                    </Popup>
+                  </Marker>
+                );
+              })}
 
-            {/* Compass */}
-            <div className="absolute top-3 right-3 flex items-center gap-1 text-muted-foreground/50 text-xs">
-              <Compass size={14} />
-              <span>N</span>
+              {/* User location */}
+              {userLocation && (
+                <Marker
+                  position={userLocation}
+                  icon={L.divIcon({
+                    html: `<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>`,
+                    className: "",
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8],
+                  })}
+                />
+              )}
+
+              <LocateButton />
+            </MapContainer>
+
+            {/* Floating compass */}
+            <div className="absolute top-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center border border-border shadow-md">
+              <Compass size={18} className="text-primary" />
             </div>
-
-            {/* Points */}
-            {points.map((p) => {
-              const cfg = typeConfig[p.type];
-              const Icon = cfg.icon;
-              return (
-                <motion.button
-                  key={p.id}
-                  onClick={() => discover(p)}
-                  className="absolute group"
-                  style={{ left: `${p.x}%`, top: `${p.y}%` }}
-                  whileHover={{ scale: 1.4 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {/* Pulse ring for undiscovered */}
-                  {!p.discovered && (
-                    <motion.div
-                      className={`absolute inset-0 -m-2 rounded-full ${cfg.pulse}`}
-                      animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
-                      transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                    />
-                  )}
-
-                  <div className={`
-                    relative w-9 h-9 -ml-[18px] -mt-[18px] rounded-full flex items-center justify-center
-                    transition-all border-2 shadow-md
-                    ${p.discovered
-                      ? `${cfg.bg} ${cfg.border}`
-                      : "bg-muted/60 border-muted-foreground/30"
-                    }
-                  `}>
-                    {p.discovered ? (
-                      <Icon size={15} className={cfg.color} />
-                    ) : (
-                      <Eye size={13} className="text-muted-foreground" />
-                    )}
-                  </div>
-
-                  {/* Tooltip on hover */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    <div className="bg-background/95 backdrop-blur border border-border rounded-md px-2 py-1 text-xs whitespace-nowrap shadow-lg">
-                      {p.discovered ? p.name : "Clique para explorar"}
-                    </div>
-                  </div>
-                </motion.button>
-              );
-            })}
           </motion.div>
 
           {/* Sidebar */}
@@ -273,18 +298,16 @@ const MapaSobrevivencia = () => {
               </h3>
               {Object.entries(typeConfig).map(([key, cfg]) => (
                 <div key={key} className="flex items-center gap-2 py-1.5">
-                  <div className={`w-6 h-6 rounded-full ${cfg.bg} border ${cfg.border} flex items-center justify-center`}>
-                    <cfg.icon size={11} className={cfg.color} />
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: cfg.color + "30", border: `1px solid ${cfg.color}60` }}>
+                    <cfg.icon size={11} style={{ color: cfg.color }} />
                   </div>
                   <span className="text-sm text-muted-foreground">{cfg.label}</span>
                 </div>
               ))}
             </div>
 
-            {/* Random event trigger */}
             <Button onClick={triggerRandomEvent} className="w-full" variant="outline" size="sm">
-              <Zap size={14} className="mr-2" />
-              Evento Aleatório
+              <Zap size={14} className="mr-2" /> Evento Aleatório
             </Button>
 
             {/* Selected point */}
@@ -299,7 +322,7 @@ const MapaSobrevivencia = () => {
                   <div className="flex items-center gap-2 mb-2">
                     {(() => {
                       const cfg = typeConfig[selected.type];
-                      return <cfg.icon size={16} className={cfg.color} />;
+                      return <cfg.icon size={16} style={{ color: cfg.color }} />;
                     })()}
                     <h3 className="font-heading text-sm text-foreground">{selected.name}</h3>
                     {selected.xpReward > 0 && (
@@ -311,7 +334,7 @@ const MapaSobrevivencia = () => {
               )}
             </AnimatePresence>
 
-            {/* Discoveries list */}
+            {/* Discoveries */}
             <div className="bg-gradient-card rounded-xl border border-border p-4">
               <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
                 <Shield size={14} className="text-primary" /> Descobertas
@@ -325,7 +348,7 @@ const MapaSobrevivencia = () => {
                       onClick={() => setSelected(p)}
                       className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-md p-1.5 transition-colors"
                     >
-                      <cfg.icon size={12} className={cfg.color} />
+                      <cfg.icon size={12} style={{ color: cfg.color }} />
                       <span className="text-xs text-muted-foreground flex-1">{p.name}</span>
                       {p.xpReward > 0 && <span className="text-[10px] text-primary">+{p.xpReward}</span>}
                     </button>
@@ -341,20 +364,16 @@ const MapaSobrevivencia = () => {
           </div>
         </div>
 
-        {/* Random Event Modal */}
+        {/* Event Modal */}
         <AnimatePresence>
           {activeEvent && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
               onClick={(e) => e.target === e.currentTarget && eventResult && closeEvent()}
             >
               <motion.div
-                initial={{ scale: 0.8, y: 30 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.8, y: 30 }}
+                initial={{ scale: 0.8, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 30 }}
                 className="bg-background border border-border rounded-xl p-6 max-w-md w-full shadow-2xl"
               >
                 <div className="flex items-start justify-between mb-4">
@@ -363,14 +382,10 @@ const MapaSobrevivencia = () => {
                     <h3 className="font-heading text-lg text-foreground">{activeEvent.title}</h3>
                   </div>
                   {eventResult && (
-                    <button onClick={closeEvent} className="text-muted-foreground hover:text-foreground">
-                      <X size={18} />
-                    </button>
+                    <button onClick={closeEvent} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
                   )}
                 </div>
-
                 <p className="text-sm text-muted-foreground mb-5">{activeEvent.description}</p>
-
                 {!eventResult ? (
                   <div className="space-y-2">
                     {activeEvent.options.map((opt, i) => (
@@ -378,8 +393,7 @@ const MapaSobrevivencia = () => {
                         key={i}
                         onClick={() => handleEventChoice(opt)}
                         className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-sm text-foreground"
-                        whileHover={{ x: 4 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}
                       >
                         {opt.label}
                       </motion.button>
@@ -393,13 +407,9 @@ const MapaSobrevivencia = () => {
                       "border-border bg-muted/30"
                     }`}>
                       <p className="text-sm text-foreground mb-2">{eventResult.effect}</p>
-                      {eventResult.xp > 0 && (
-                        <p className="text-sm font-heading text-primary">+{eventResult.xp} XP ganhos!</p>
-                      )}
+                      {eventResult.xp > 0 && <p className="text-sm font-heading text-primary">+{eventResult.xp} XP ganhos!</p>}
                     </div>
-                    <Button onClick={closeEvent} className="w-full mt-4" size="sm">
-                      Continuar Explorando
-                    </Button>
+                    <Button onClick={closeEvent} className="w-full mt-4" size="sm">Continuar Explorando</Button>
                   </motion.div>
                 )}
               </motion.div>
