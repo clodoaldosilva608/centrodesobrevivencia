@@ -127,12 +127,20 @@ const MapaSobrevivencia = () => {
 
   const discover = (point: MapPoint) => {
     if (!point.discovered) {
-      setPoints((prev) => prev.map((p) => p.id === point.id ? { ...p, discovered: true } : p));
+      const newPoints = points.map((p) => p.id === point.id ? { ...p, discovered: true } : p);
+      setPoints(newPoints);
       if (point.type === "event") { triggerRandomEvent(); return; }
       if (point.xpReward > 0) {
         addXP(point.xpReward);
         toast.success(`📍 ${point.name} descoberto! +${point.xpReward} XP`);
       }
+      // Check map achievements
+      const disc = newPoints.filter((p) => p.discovered).length;
+      const waterDisc = newPoints.filter((p) => p.discovered && p.type === "water").length;
+      const totalWater = newPoints.filter((p) => p.type === "water").length;
+      const dangerDisc = newPoints.filter((p) => p.discovered && p.type === "danger").length;
+      const totalDanger = newPoints.filter((p) => p.type === "danger").length;
+      checkMapAchievements(disc, newPoints.length, waterDisc, totalWater, dangerDisc, totalDanger);
     }
     setSelected({ ...point, discovered: true });
   };
