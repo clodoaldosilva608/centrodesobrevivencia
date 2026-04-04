@@ -148,6 +148,9 @@ const MapaSobrevivencia = () => {
   const handleEventChoice = (option: { label: string; effect: string; xp: number; outcome: string }) => {
     setEventResult(option);
     if (option.xp > 0) { addXP(option.xp); toast.success(`⚡ +${option.xp} XP ganhos no evento!`); }
+    const newCount = eventsSurvived + 1;
+    setEventsSurvived(newCount);
+    if (newCount >= 3) unlockAchievement("map-event-survivor");
   };
 
   const closeEvent = () => { setActiveEvent(null); setEventResult(null); };
