@@ -265,6 +265,33 @@ const MapaSobrevivencia = () => {
 
           {/* Sidebar */}
           <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            {/* Search & Filter */}
+            <div className="bg-gradient-card rounded-xl border border-border p-4">
+              <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
+                <Search size={14} className="text-primary" /> Buscar & Filtrar
+              </h3>
+              <div className="relative mb-3">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar pontos..."
+                  className="w-full text-sm bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(typeConfig).map(([key, cfg]) => (
+                  <button key={key} onClick={() => toggleTypeFilter(key)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      activeTypeFilters.has(key) ? "border-primary/50 bg-primary/10 text-foreground" : "border-border/50 text-muted-foreground opacity-50"
+                    }`}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: cfg.color }} />
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">{filteredPoints.length} de {points.length} pontos visíveis</p>
+            </div>
+
             {/* Layers toggle */}
             <div className="bg-gradient-card rounded-xl border border-border p-4">
               <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
