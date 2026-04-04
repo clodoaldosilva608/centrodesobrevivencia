@@ -219,7 +219,7 @@ const MapaSobrevivencia = () => {
               ))}
 
               {/* POI markers */}
-              {points.map((p) => {
+              {filteredPoints.map((p) => {
                 const cfg = typeConfig[p.type];
                 return (
                   <Marker key={p.id} position={[p.lat, p.lng]} icon={createIcon(cfg.color, p.discovered)} eventHandlers={{ click: () => discover(p) }}>
