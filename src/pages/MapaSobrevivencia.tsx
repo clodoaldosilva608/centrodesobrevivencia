@@ -76,7 +76,7 @@ const MapaSobrevivencia = () => {
   const [activeEvent, setActiveEvent] = useState<(typeof RANDOM_EVENTS)[0] | null>(null);
   const [eventResult, setEventResult] = useState<{ effect: string; xp: number; outcome: string } | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const { addXP } = useUserProfile();
+  const { addXP, checkMapAchievements, unlockAchievement } = useUserProfile();
   const { waypoints, addWaypoint, removeWaypoint, clearWaypoints } = useWaypoints();
 
   // Search & filter
