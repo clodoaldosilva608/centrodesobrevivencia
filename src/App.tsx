@@ -20,6 +20,7 @@ import Admin from "./pages/Admin";
 import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
 import SimuladorFloresta from "./pages/SimuladorFloresta";
+import Estatisticas from "./pages/Estatisticas";
 import NotFound from "./pages/NotFound";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
