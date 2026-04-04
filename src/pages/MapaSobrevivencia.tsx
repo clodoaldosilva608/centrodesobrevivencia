@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   Droplets, Mountain, AlertTriangle, Zap, MapPin, Compass, Skull, Apple, Flame,
   Shield, X, Navigation, Locate, Plus, Trash2, Route, Tent, TriangleAlert,
-  Eye, EyeOff, Flag
+  Eye, EyeOff, Flag, Search, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
