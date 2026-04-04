@@ -31,6 +31,14 @@ const ACHIEVEMENTS_LIST: Achievement[] = [
   { id: "master", title: "Mestre da Sobrevivência", description: "Alcance o nível 10", icon: "👑" },
   { id: "veteran", title: "Veterano", description: "Alcance o nível 20", icon: "🎖️" },
   { id: "legend", title: "Lenda da Selva", description: "Alcance o nível 50", icon: "🌟" },
+  // Map achievements
+  { id: "map-first", title: "Primeiro Passo", description: "Descubra seu primeiro ponto no mapa", icon: "📍" },
+  { id: "map-5", title: "Cartógrafo Iniciante", description: "Descubra 5 pontos no mapa", icon: "🗺️" },
+  { id: "map-explorer", title: "Explorador Completo", description: "Descubra todos os pontos do mapa", icon: "🌍" },
+  { id: "map-water-expert", title: "Rastreador de Água", description: "Descubra todos os pontos de água", icon: "🌊" },
+  { id: "map-danger-master", title: "Mestre do Perigo", description: "Descubra todas as zonas de perigo", icon: "☠️" },
+  { id: "map-waypoint", title: "Marcador de Trilha", description: "Crie seu primeiro waypoint", icon: "🚩" },
+  { id: "map-event-survivor", title: "Sobrevivente de Eventos", description: "Sobreviva a 3 eventos aleatórios", icon: "⚡" },
 ];
 
 const XP_PER_LEVEL = 500;
