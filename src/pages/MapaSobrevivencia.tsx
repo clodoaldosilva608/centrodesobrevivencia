@@ -109,6 +109,9 @@ const MapaSobrevivencia = () => {
   const [wpColor, setWpColor] = useState(waypointColors[0]);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // Track events survived
+  const [eventsSurvived, setEventsSurvived] = useState(0);
+
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
