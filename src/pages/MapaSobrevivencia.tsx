@@ -164,6 +164,7 @@ const MapaSobrevivencia = () => {
     if (!pendingCoords || !wpName.trim()) return;
     addWaypoint(pendingCoords.lat, pendingCoords.lng, wpName, wpNote, wpColor);
     toast.success(`🚩 Waypoint "${wpName}" adicionado!`);
+    unlockAchievement("map-waypoint");
     setPendingCoords(null);
     setWpName("");
     setWpNote("");
