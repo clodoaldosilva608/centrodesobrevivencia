@@ -79,6 +79,24 @@ const MapaSobrevivencia = () => {
   const { addXP } = useUserProfile();
   const { waypoints, addWaypoint, removeWaypoint, clearWaypoints } = useWaypoints();
 
+  // Search & filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set(["water", "danger", "shelter", "resource", "event"]));
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  };
+
+  const filteredPoints = points.filter((p) => {
+    if (!activeTypeFilters.has(p.type)) return false;
+    if (searchQuery.trim() && !p.name.toLowerCase().includes(searchQuery.toLowerCase()) && !p.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
   // Layer visibility
   const [showTrails, setShowTrails] = useState(true);
   const [showCamping, setShowCamping] = useState(true);
