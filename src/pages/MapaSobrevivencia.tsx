@@ -76,7 +76,7 @@ const MapaSobrevivencia = () => {
   const [activeEvent, setActiveEvent] = useState<(typeof RANDOM_EVENTS)[0] | null>(null);
   const [eventResult, setEventResult] = useState<{ effect: string; xp: number; outcome: string } | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const { addXP } = useUserProfile();
+  const { addXP, checkMapAchievements, unlockAchievement } = useUserProfile();
   const { waypoints, addWaypoint, removeWaypoint, clearWaypoints } = useWaypoints();
 
   // Search & filter
@@ -109,6 +109,9 @@ const MapaSobrevivencia = () => {
   const [wpColor, setWpColor] = useState(waypointColors[0]);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // Track events survived
+  const [eventsSurvived, setEventsSurvived] = useState(0);
+
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
@@ -124,12 +127,20 @@ const MapaSobrevivencia = () => {
 
   const discover = (point: MapPoint) => {
     if (!point.discovered) {
-      setPoints((prev) => prev.map((p) => p.id === point.id ? { ...p, discovered: true } : p));
+      const newPoints = points.map((p) => p.id === point.id ? { ...p, discovered: true } : p);
+      setPoints(newPoints);
       if (point.type === "event") { triggerRandomEvent(); return; }
       if (point.xpReward > 0) {
         addXP(point.xpReward);
         toast.success(`📍 ${point.name} descoberto! +${point.xpReward} XP`);
       }
+      // Check map achievements
+      const disc = newPoints.filter((p) => p.discovered).length;
+      const waterDisc = newPoints.filter((p) => p.discovered && p.type === "water").length;
+      const totalWater = newPoints.filter((p) => p.type === "water").length;
+      const dangerDisc = newPoints.filter((p) => p.discovered && p.type === "danger").length;
+      const totalDanger = newPoints.filter((p) => p.type === "danger").length;
+      checkMapAchievements(disc, newPoints.length, waterDisc, totalWater, dangerDisc, totalDanger);
     }
     setSelected({ ...point, discovered: true });
   };
@@ -137,6 +148,9 @@ const MapaSobrevivencia = () => {
   const handleEventChoice = (option: { label: string; effect: string; xp: number; outcome: string }) => {
     setEventResult(option);
     if (option.xp > 0) { addXP(option.xp); toast.success(`⚡ +${option.xp} XP ganhos no evento!`); }
+    const newCount = eventsSurvived + 1;
+    setEventsSurvived(newCount);
+    if (newCount >= 3) unlockAchievement("map-event-survivor");
   };
 
   const closeEvent = () => { setActiveEvent(null); setEventResult(null); };
@@ -150,6 +164,7 @@ const MapaSobrevivencia = () => {
     if (!pendingCoords || !wpName.trim()) return;
     addWaypoint(pendingCoords.lat, pendingCoords.lng, wpName, wpNote, wpColor);
     toast.success(`🚩 Waypoint "${wpName}" adicionado!`);
+    unlockAchievement("map-waypoint");
     setPendingCoords(null);
     setWpName("");
     setWpNote("");

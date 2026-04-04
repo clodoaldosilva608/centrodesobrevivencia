@@ -31,6 +31,14 @@ const ACHIEVEMENTS_LIST: Achievement[] = [
   { id: "master", title: "Mestre da Sobrevivência", description: "Alcance o nível 10", icon: "👑" },
   { id: "veteran", title: "Veterano", description: "Alcance o nível 20", icon: "🎖️" },
   { id: "legend", title: "Lenda da Selva", description: "Alcance o nível 50", icon: "🌟" },
+  // Map achievements
+  { id: "map-first", title: "Primeiro Passo", description: "Descubra seu primeiro ponto no mapa", icon: "📍" },
+  { id: "map-5", title: "Cartógrafo Iniciante", description: "Descubra 5 pontos no mapa", icon: "🗺️" },
+  { id: "map-explorer", title: "Explorador Completo", description: "Descubra todos os pontos do mapa", icon: "🌍" },
+  { id: "map-water-expert", title: "Rastreador de Água", description: "Descubra todos os pontos de água", icon: "🌊" },
+  { id: "map-danger-master", title: "Mestre do Perigo", description: "Descubra todas as zonas de perigo", icon: "☠️" },
+  { id: "map-waypoint", title: "Marcador de Trilha", description: "Crie seu primeiro waypoint", icon: "🚩" },
+  { id: "map-event-survivor", title: "Sobrevivente de Eventos", description: "Sobreviva a 3 eventos aleatórios", icon: "⚡" },
 ];
 
 const XP_PER_LEVEL = 500;
@@ -142,6 +150,36 @@ export function useUserProfile() {
     setProfile((prev) => ({ ...prev, name }));
   }, []);
 
+  const checkMapAchievements = useCallback((discoveredCount: number, totalPoints: number, waterDiscovered: number, totalWater: number, dangerDiscovered: number, totalDanger: number) => {
+    setProfile((prev) => {
+      let newAchievements = [...prev.achievements];
+      const tryUnlock = (id: string) => {
+        if (!newAchievements.find((a) => a.id === id)) {
+          const ach = ACHIEVEMENTS_LIST.find((a) => a.id === id)!;
+          if (ach) newAchievements.push({ ...ach, unlockedAt: new Date().toISOString() });
+        }
+      };
+      if (discoveredCount >= 1) tryUnlock("map-first");
+      if (discoveredCount >= 5) tryUnlock("map-5");
+      if (discoveredCount >= totalPoints && totalPoints > 0) tryUnlock("map-explorer");
+      if (waterDiscovered >= totalWater && totalWater > 0) tryUnlock("map-water-expert");
+      if (dangerDiscovered >= totalDanger && totalDanger > 0) tryUnlock("map-danger-master");
+      notifyNew(prev.achievements, newAchievements);
+      return newAchievements.length !== prev.achievements.length ? { ...prev, achievements: newAchievements } : prev;
+    });
+  }, [notifyNew]);
+
+  const unlockAchievement = useCallback((id: string) => {
+    setProfile((prev) => {
+      if (prev.achievements.find((a) => a.id === id)) return prev;
+      const ach = ACHIEVEMENTS_LIST.find((a) => a.id === id);
+      if (!ach) return prev;
+      const newAchievements = [...prev.achievements, { ...ach, unlockedAt: new Date().toISOString() }];
+      notifyNew(prev.achievements, newAchievements);
+      return { ...prev, achievements: newAchievements };
+    });
+  }, [notifyNew]);
+
   const xpForNextLevel = XP_PER_LEVEL;
   const currentLevelXP = profile.xp % XP_PER_LEVEL;
   const xpProgress = (currentLevelXP / xpForNextLevel) * 100;
@@ -152,6 +190,8 @@ export function useUserProfile() {
     completeChallenge,
     playGame,
     updateName,
+    checkMapAchievements,
+    unlockAchievement,
     xpProgress,
     currentLevelXP,
     xpForNextLevel,
