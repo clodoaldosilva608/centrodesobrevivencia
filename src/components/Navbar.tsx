@@ -15,6 +15,7 @@ const navItems = [
   { label: "Desafios", path: "/desafios" },
   { label: "Comunidade", path: "/comunidade" },
   { label: "Perfil", path: "/perfil" },
+  { label: "Estatísticas", path: "/estatisticas" },
   { label: "Admin", path: "/admin" },
 ];
 
