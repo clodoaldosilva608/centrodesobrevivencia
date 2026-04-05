@@ -50,6 +50,17 @@ const MOCK_LEADERBOARD = [
   { name: "Novato_Rafael", xp: 350, level: 1, achievements: 1, avatar: "🌱" },
 ];
 
+const MOCK_MAP_RANKING = [
+  { name: "Trilheira_Maria", pointsDiscovered: 18, avatar: "🏔️" },
+  { name: "Explorador_Silva", pointsDiscovered: 15, avatar: "🧭" },
+  { name: "Bushcraft_João", pointsDiscovered: 12, avatar: "🌿" },
+  { name: "Sobrevivente_Pedro", pointsDiscovered: 9, avatar: "🔥" },
+  { name: "Bushcraft_Ana", pointsDiscovered: 7, avatar: "🏕️" },
+  { name: "Aventureiro_Carlos", pointsDiscovered: 4, avatar: "⛰️" },
+  { name: "Rastreador_Lucas", pointsDiscovered: 2, avatar: "🐾" },
+  { name: "Novato_Rafael", pointsDiscovered: 0, avatar: "🌱" },
+];
+
 const RANK_ICONS = [Crown, Medal, Award];
 
 const Comunidade = () => {
