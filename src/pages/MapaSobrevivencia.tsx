@@ -427,10 +427,44 @@ const MapaSobrevivencia = () => {
               )}
             </AnimatePresence>
 
+            {/* Discovery Progress by Category */}
+            <div className="bg-gradient-card rounded-xl border border-border p-4">
+              <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
+                <Shield size={14} className="text-primary" /> Progresso por Categoria
+              </h3>
+              <div className="space-y-3">
+                {Object.entries(typeConfig).map(([key, cfg]) => {
+                  const total = points.filter((p) => p.type === key).length;
+                  const disc = points.filter((p) => p.type === key && p.discovered).length;
+                  const pct = total > 0 ? Math.round((disc / total) * 100) : 0;
+                  return (
+                    <div key={key}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <cfg.icon size={12} style={{ color: cfg.color }} />
+                          <span className="text-xs text-muted-foreground">{cfg.label}</span>
+                        </div>
+                        <span className="text-xs font-medium text-foreground">{disc}/{total} ({pct}%)</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: cfg.color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Discoveries */}
             <div className="bg-gradient-card rounded-xl border border-border p-4">
               <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
-                <Shield size={14} className="text-primary" /> Descobertas
+                <MapPin size={14} className="text-primary" /> Descobertas
               </h3>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {points.filter((p) => p.discovered).map((p) => {
