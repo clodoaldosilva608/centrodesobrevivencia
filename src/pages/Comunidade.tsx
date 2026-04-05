@@ -5,7 +5,7 @@ import Section from "@/components/Section";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award, Map } from "lucide-react";
 
 interface ForumPost {
   id: string;
@@ -50,6 +50,17 @@ const MOCK_LEADERBOARD = [
   { name: "Novato_Rafael", xp: 350, level: 1, achievements: 1, avatar: "🌱" },
 ];
 
+const MOCK_MAP_RANKING = [
+  { name: "Trilheira_Maria", pointsDiscovered: 18, avatar: "🏔️" },
+  { name: "Explorador_Silva", pointsDiscovered: 15, avatar: "🧭" },
+  { name: "Bushcraft_João", pointsDiscovered: 12, avatar: "🌿" },
+  { name: "Sobrevivente_Pedro", pointsDiscovered: 9, avatar: "🔥" },
+  { name: "Bushcraft_Ana", pointsDiscovered: 7, avatar: "🏕️" },
+  { name: "Aventureiro_Carlos", pointsDiscovered: 4, avatar: "⛰️" },
+  { name: "Rastreador_Lucas", pointsDiscovered: 2, avatar: "🐾" },
+  { name: "Novato_Rafael", pointsDiscovered: 0, avatar: "🌱" },
+];
+
 const RANK_ICONS = [Crown, Medal, Award];
 
 const Comunidade = () => {
@@ -60,7 +71,15 @@ const Comunidade = () => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [showMapRanking, setShowMapRanking] = useState(false);
   const { profile } = useUserProfile();
+
+  // Map ranking with user
+  const mapAchievementIds = ["map-first", "map-5", "map-explorer", "map-water-expert", "map-danger-master", "map-waypoint", "map-event-survivor"];
+  const userMapPoints = profile.achievements.filter((a) => mapAchievementIds.includes(a.id)).length * 3; // estimate
+  const mapRanking = [...MOCK_MAP_RANKING, { name: profile.name, pointsDiscovered: userMapPoints, avatar: "👤" }]
+    .sort((a, b) => b.pointsDiscovered - a.pointsDiscovered)
+    .slice(0, 10);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(posts)); }, [posts]);
 
@@ -149,7 +168,38 @@ const Comunidade = () => {
           )}
         </div>
 
-        {/* New post */}
+        {/* Map Ranking */}
+        <div className="bg-gradient-card rounded-xl border border-border p-5 mb-8">
+          <button onClick={() => setShowMapRanking(!showMapRanking)} className="flex items-center gap-2 w-full">
+            <Map size={20} className="text-primary" />
+            <h3 className="font-heading text-lg text-foreground tracking-wider flex-1 text-left">Ranking do Mapa</h3>
+            <span className="text-xs text-muted-foreground">{showMapRanking ? "Ocultar" : "Mostrar"}</span>
+          </button>
+          {showMapRanking && (
+            <div className="mt-4 space-y-2">
+              {mapRanking.map((user, i) => {
+                const isUser = user.name === profile.name;
+                const RankIcon = RANK_ICONS[i] || null;
+                return (
+                  <motion.div key={user.name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isUser ? "bg-primary/10 border border-primary/30" : "bg-muted/30 hover:bg-muted/50"}`}>
+                    <span className={`w-7 text-center font-heading text-sm ${i < 3 ? "text-primary" : "text-muted-foreground"}`}>
+                      {RankIcon ? <RankIcon size={18} className="mx-auto" /> : `#${i + 1}`}
+                    </span>
+                    <span className="text-lg">{user.avatar}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${isUser ? "text-primary" : "text-foreground"}`}>
+                        {user.name} {isUser && <span className="text-xs text-primary/70">(você)</span>}
+                      </p>
+                    </div>
+                    <span className="font-heading text-sm text-primary whitespace-nowrap">{user.pointsDiscovered} pontos</span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="bg-gradient-card rounded-lg border border-border p-4 mb-8">
           <h3 className="font-heading text-sm text-foreground tracking-wider mb-3">Nova Publicação</h3>
           <textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Compartilhe sua experiência, dúvida ou dica..."

@@ -26,6 +26,7 @@ import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
 import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
 import PWAInstallBanner from "./components/PWAInstallBanner";
+import ShareInviteButton from "./components/ShareInviteButton";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => {
               <OnboardingTutorial />
               <EngagementNotification />
               <PWAInstallBanner />
+              <ShareInviteButton />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />
