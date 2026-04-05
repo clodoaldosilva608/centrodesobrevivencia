@@ -55,6 +55,7 @@ const App = () => {
               <OnboardingTutorial />
               <EngagementNotification />
               <PWAInstallBanner />
+              <ShareInviteButton />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/welcome" element={<Welcome />} />

@@ -71,7 +71,15 @@ const Comunidade = () => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [showMapRanking, setShowMapRanking] = useState(false);
   const { profile } = useUserProfile();
+
+  // Map ranking with user
+  const mapAchievementIds = ["map-first", "map-5", "map-explorer", "map-water-expert", "map-danger-master", "map-waypoint", "map-event-survivor"];
+  const userMapPoints = profile.achievements.filter((a) => mapAchievementIds.includes(a.id)).length * 3; // estimate
+  const mapRanking = [...MOCK_MAP_RANKING, { name: profile.name, pointsDiscovered: userMapPoints, avatar: "👤" }]
+    .sort((a, b) => b.pointsDiscovered - a.pointsDiscovered)
+    .slice(0, 10);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(posts)); }, [posts]);
 
