@@ -125,6 +125,30 @@ const MapaSobrevivencia = () => {
     setEventResult(null);
   }, []);
 
+  // Track which milestones were already toasted
+  const [toastedMilestones, setToastedMilestones] = useState<Set<string>>(new Set());
+
+  const checkCategoryMilestones = useCallback((pts: MapPoint[]) => {
+    const newToasted = new Set(toastedMilestones);
+    Object.entries(typeConfig).forEach(([key, cfg]) => {
+      const total = pts.filter((p) => p.type === key).length;
+      const disc = pts.filter((p) => p.type === key && p.discovered).length;
+      if (total === 0) return;
+      const pct = Math.round((disc / total) * 100);
+      const halfKey = `${key}-50`;
+      const fullKey = `${key}-100`;
+      if (pct >= 50 && !newToasted.has(halfKey)) {
+        newToasted.add(halfKey);
+        toast(`${cfg.emoji} ${cfg.label}: 50% descoberto!`, { description: `${disc}/${total} pontos explorados` });
+      }
+      if (pct >= 100 && !newToasted.has(fullKey)) {
+        newToasted.add(fullKey);
+        toast.success(`🏆 ${cfg.label}: 100% completo!`, { description: `Todos os ${total} pontos descobertos!` });
+      }
+    });
+    if (newToasted.size !== toastedMilestones.size) setToastedMilestones(newToasted);
+  }, [toastedMilestones]);
+
   const discover = (point: MapPoint) => {
     if (!point.discovered) {
       const newPoints = points.map((p) => p.id === point.id ? { ...p, discovered: true } : p);
@@ -141,6 +165,8 @@ const MapaSobrevivencia = () => {
       const dangerDisc = newPoints.filter((p) => p.discovered && p.type === "danger").length;
       const totalDanger = newPoints.filter((p) => p.type === "danger").length;
       checkMapAchievements(disc, newPoints.length, waterDisc, totalWater, dangerDisc, totalDanger);
+      // Check category milestones for toasts
+      checkCategoryMilestones(newPoints);
     }
     setSelected({ ...point, discovered: true });
   };
