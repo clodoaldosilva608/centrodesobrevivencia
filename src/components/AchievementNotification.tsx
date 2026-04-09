@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy } from "lucide-react";
 import type { Achievement } from "@/hooks/useUserProfile";
+import { playAchievementSound } from "@/lib/sounds";
 
 interface AchievementNotificationProps {
   achievement: Achievement | null;
@@ -54,6 +55,7 @@ const CONFETTI_COUNT = 30;
 const AchievementNotification = ({ achievement, onDismiss }: AchievementNotificationProps) => {
   useEffect(() => {
     if (achievement) {
+      playAchievementSound();
       const timer = setTimeout(onDismiss, 4000);
       return () => clearTimeout(timer);
     }

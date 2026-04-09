@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWaypoints } from "@/hooks/useWaypoints";
 import { toast } from "sonner";
+import { playDiscoverSound, playMilestoneSound, playCompletionSound, playXPSound } from "@/lib/sounds";
 import {
   Droplets, Mountain, AlertTriangle, Zap, MapPin, Compass, Skull, Apple, Flame,
   Shield, X, Navigation, Locate, Plus, Trash2, Route, Tent, TriangleAlert,
@@ -139,10 +140,12 @@ const MapaSobrevivencia = () => {
       const fullKey = `${key}-100`;
       if (pct >= 50 && !newToasted.has(halfKey)) {
         newToasted.add(halfKey);
+        playMilestoneSound();
         toast(`${cfg.emoji} ${cfg.label}: 50% descoberto!`, { description: `${disc}/${total} pontos explorados` });
       }
       if (pct >= 100 && !newToasted.has(fullKey)) {
         newToasted.add(fullKey);
+        playCompletionSound();
         toast.success(`🏆 ${cfg.label}: 100% completo!`, { description: `Todos os ${total} pontos descobertos!` });
       }
     });
@@ -154,8 +157,10 @@ const MapaSobrevivencia = () => {
       const newPoints = points.map((p) => p.id === point.id ? { ...p, discovered: true } : p);
       setPoints(newPoints);
       if (point.type === "event") { triggerRandomEvent(); return; }
+      playDiscoverSound();
       if (point.xpReward > 0) {
         addXP(point.xpReward);
+        playXPSound();
         toast.success(`📍 ${point.name} descoberto! +${point.xpReward} XP`);
       }
       // Check map achievements
