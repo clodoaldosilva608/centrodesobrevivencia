@@ -198,6 +198,21 @@ const Perfil = () => {
           </div>
         </div>
 
+        {/* Settings */}
+        <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
+          <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">⚙️ Configurações</h2>
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/50">
+            <div className="flex items-center gap-3">
+              {soundOn ? <Volume2 size={20} className="text-primary" /> : <VolumeX size={20} className="text-muted-foreground" />}
+              <div>
+                <p className="text-sm font-medium text-foreground">Sons de Feedback</p>
+                <p className="text-xs text-muted-foreground">Tocar sons ao descobrir pontos, conquistas e marcos</p>
+              </div>
+            </div>
+            <Switch checked={soundOn} onCheckedChange={toggleSound} />
+          </div>
+        </div>
+
         {/* Activity History */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
