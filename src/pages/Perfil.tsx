@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isSoundEnabled, setSoundEnabled, playDiscoverSound } from "@/lib/sounds";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -8,7 +9,8 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 const BADGE_RARITY: Record<string, { label: string; color: string; border: string; bg: string }> = {
@@ -31,7 +33,13 @@ const Perfil = () => {
   const { entries, logActivity } = useActivityLog();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
 
+  const toggleSound = (val: boolean) => {
+    setSoundOn(val);
+    setSoundEnabled(val);
+    if (val) playDiscoverSound();
+  };
   const saveName = () => { updateName(nameInput); setEditingName(false); logActivity("Alterou o nome do perfil", "✏️"); };
 
   const handleCompleteMission = (id: string) => {
