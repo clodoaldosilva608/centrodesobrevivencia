@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWaypoints } from "@/hooks/useWaypoints";
 import { toast } from "sonner";
+import { playDiscoverSound, playMilestoneSound, playCompletionSound, playXPSound } from "@/lib/sounds";
 import {
   Droplets, Mountain, AlertTriangle, Zap, MapPin, Compass, Skull, Apple, Flame,
   Shield, X, Navigation, Locate, Plus, Trash2, Route, Tent, TriangleAlert,
