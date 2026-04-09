@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isSoundEnabled, setSoundEnabled, playDiscoverSound } from "@/lib/sounds";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -8,7 +9,8 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 const BADGE_RARITY: Record<string, { label: string; color: string; border: string; bg: string }> = {
@@ -31,7 +33,13 @@ const Perfil = () => {
   const { entries, logActivity } = useActivityLog();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
 
+  const toggleSound = (val: boolean) => {
+    setSoundOn(val);
+    setSoundEnabled(val);
+    if (val) playDiscoverSound();
+  };
   const saveName = () => { updateName(nameInput); setEditingName(false); logActivity("Alterou o nome do perfil", "✏️"); };
 
   const handleCompleteMission = (id: string) => {
@@ -187,6 +195,21 @@ const Perfil = () => {
             <Button size="sm" variant="outline" onClick={() => { addXP(25); logActivity("Ganhou XP bônus (+25 XP)", "⚡", 25); }}>
               <Zap size={14} className="mr-1" /> Ganhar 25 XP
             </Button>
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="bg-gradient-card rounded-xl border border-border p-6 mb-8">
+          <h2 className="font-heading text-xl text-foreground tracking-wider mb-4">⚙️ Configurações</h2>
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/50">
+            <div className="flex items-center gap-3">
+              {soundOn ? <Volume2 size={20} className="text-primary" /> : <VolumeX size={20} className="text-muted-foreground" />}
+              <div>
+                <p className="text-sm font-medium text-foreground">Sons de Feedback</p>
+                <p className="text-xs text-muted-foreground">Tocar sons ao descobrir pontos, conquistas e marcos</p>
+              </div>
+            </div>
+            <Switch checked={soundOn} onCheckedChange={toggleSound} />
           </div>
         </div>
 

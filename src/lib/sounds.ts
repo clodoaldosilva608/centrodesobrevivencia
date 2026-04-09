@@ -3,9 +3,20 @@
  * No external files or backend needed.
  */
 
+const SOUND_KEY = "sh_sounds_enabled";
+
+export function isSoundEnabled(): boolean {
+  return localStorage.getItem(SOUND_KEY) !== "false";
+}
+
+export function setSoundEnabled(enabled: boolean) {
+  localStorage.setItem(SOUND_KEY, enabled ? "true" : "false");
+}
+
 let audioCtx: AudioContext | null = null;
 
-function getCtx(): AudioContext {
+function getCtx(): AudioContext | null {
+  if (!isSoundEnabled()) return null;
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
@@ -13,6 +24,7 @@ function getCtx(): AudioContext {
 
 function playTone(freq: number, duration: number, type: OscillatorType = "sine", gain = 0.15) {
   const ctx = getCtx();
+  if (!ctx) return;
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
   osc.type = type;
@@ -27,6 +39,7 @@ function playTone(freq: number, duration: number, type: OscillatorType = "sine",
 /** Short rising chime – point discovered */
 export function playDiscoverSound() {
   const ctx = getCtx();
+  if (!ctx) return;
   const t = ctx.currentTime;
   [523, 659, 784].forEach((freq, i) => {
     const osc = ctx.createOscillator();
@@ -44,6 +57,7 @@ export function playDiscoverSound() {
 /** Triumphant fanfare – achievement unlocked */
 export function playAchievementSound() {
   const ctx = getCtx();
+  if (!ctx) return;
   const t = ctx.currentTime;
   const notes = [523, 659, 784, 1047];
   notes.forEach((freq, i) => {
@@ -61,6 +75,7 @@ export function playAchievementSound() {
 
 /** Quick double-beep – milestone reached (50%) */
 export function playMilestoneSound() {
+  if (!isSoundEnabled()) return;
   playTone(880, 0.15, "square", 0.08);
   setTimeout(() => playTone(1100, 0.2, "square", 0.1), 160);
 }
@@ -68,6 +83,7 @@ export function playMilestoneSound() {
 /** Grand completion jingle – 100% category */
 export function playCompletionSound() {
   const ctx = getCtx();
+  if (!ctx) return;
   const t = ctx.currentTime;
   const notes = [784, 988, 1175, 1319, 1568];
   notes.forEach((freq, i) => {
@@ -85,5 +101,6 @@ export function playCompletionSound() {
 
 /** XP gain blip */
 export function playXPSound() {
+  if (!isSoundEnabled()) return;
   playTone(1200, 0.1, "sine", 0.08);
 }
