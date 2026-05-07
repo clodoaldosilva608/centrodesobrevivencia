@@ -48,8 +48,15 @@ const Index = () => {
                 Explorar Equipamentos
               </Link>
               <Link
+                to="/bussola"
+                className="border border-primary text-primary font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:bg-primary/10 transition-colors text-sm flex items-center gap-2"
+              >
+                <Compass className="w-4 h-4" />
+                Bússola Tática
+              </Link>
+              <Link
                 to="/simulador"
-                className="border border-primary text-primary font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:bg-primary/10 transition-colors text-sm"
+                className="border border-border text-foreground font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:bg-muted transition-colors text-sm"
               >
                 Iniciar Simulador
               </Link>

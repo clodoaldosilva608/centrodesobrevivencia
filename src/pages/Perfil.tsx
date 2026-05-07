@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isSoundEnabled, setSoundEnabled, getSoundVolume, setSoundVolume, playDiscoverSound } from "@/lib/sounds";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -10,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const BADGE_RARITY: Record<string, { label: string; color: string; border: strin
 };
 
 const Perfil = () => {
+  const { user, logout, isAuthenticated } = useAuth();
   const { profile, addXP, completeChallenge, playGame, updateName, xpProgress, currentLevelXP, xpForNextLevel, allAchievements } = useUserProfile();
   const dailyMissions = useDailyMissions();
   const streak = useStreak();
@@ -228,6 +230,24 @@ const Perfil = () => {
               <span className="text-xs text-muted-foreground w-8 text-right">{Math.round(volume * 100)}%</span>
             </div>
           )}
+
+          {/* Conta */}
+          <div className="mt-4 pt-4 border-t border-border/50">
+            {isAuthenticated && user ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-foreground">Logado como <span className="text-primary font-medium">{user.email}</span></p>
+                  <p className="text-xs text-muted-foreground">via {user.provider === "google" ? "Google" : "E-mail"}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={logout} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </Button>
+              </div>
+            ) : (
+              <a href="/login" className="text-sm text-primary hover:underline">Fazer login →</a>
+            )}
+          </div>
         </div>
 
         {/* Activity History */}
