@@ -213,6 +213,21 @@ const Perfil = () => {
             </div>
             <Switch checked={soundOn} onCheckedChange={toggleSound} />
           </div>
+          {soundOn && (
+            <div className="flex items-center gap-4 p-3 rounded-lg border border-border/50 mt-3">
+              <VolumeX size={16} className="text-muted-foreground shrink-0" />
+              <Slider
+                value={[volume * 100]}
+                max={100}
+                step={5}
+                onValueChange={([v]) => { const nv = v / 100; setVolume(nv); setSoundVolume(nv); }}
+                onValueCommit={() => playDiscoverSound()}
+                className="flex-1"
+              />
+              <Volume2 size={16} className="text-primary shrink-0" />
+              <span className="text-xs text-muted-foreground w-8 text-right">{Math.round(volume * 100)}%</span>
+            </div>
+          )}
         </div>
 
         {/* Activity History */}
