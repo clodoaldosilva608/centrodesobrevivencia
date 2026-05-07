@@ -29,6 +29,7 @@ const BADGE_RARITY: Record<string, { label: string; color: string; border: strin
 };
 
 const Perfil = () => {
+  const { user, logout, isAuthenticated } = useAuth();
   const { profile, addXP, completeChallenge, playGame, updateName, xpProgress, currentLevelXP, xpForNextLevel, allAchievements } = useUserProfile();
   const dailyMissions = useDailyMissions();
   const streak = useStreak();
