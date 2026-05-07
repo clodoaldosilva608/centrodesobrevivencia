@@ -21,12 +21,16 @@ import Perfil from "./pages/Perfil";
 import Comunidade from "./pages/Comunidade";
 import SimuladorFloresta from "./pages/SimuladorFloresta";
 import Estatisticas from "./pages/Estatisticas";
+import Bussola from "./pages/Bussola";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
 import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 import ShareInviteButton from "./components/ShareInviteButton";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -43,41 +47,52 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AchievementNotifProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AnimatePresence>
-            {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
-          </AnimatePresence>
-          {!showSplash && (
-            <BrowserRouter>
-              <OnboardingTutorial />
-              <EngagementNotification />
-              <PWAInstallBanner />
-              <ShareInviteButton />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/welcome" element={<Welcome />} />
-                <Route path="/equipamentos" element={<Equipamentos />} />
-                <Route path="/equipamentos/:id" element={<ProdutoDetalhe />} />
-                <Route path="/ebooks" element={<Ebooks />} />
-                <Route path="/ebooks/:id" element={<EbookDetalhe />} />
-                <Route path="/jogos" element={<Jogos />} />
-                <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
-                <Route path="/simulador" element={<Simulador />} />
-                <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
-                <Route path="/desafios" element={<Desafios />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/perfil" element={<Perfil />} />
-                <Route path="/comunidade" element={<Comunidade />} />
-                <Route path="/estatisticas" element={<Estatisticas />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          )}
-        </TooltipProvider>
-      </AchievementNotifProvider>
+      <AuthProvider>
+        <AchievementNotifProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AnimatePresence>
+              {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+            </AnimatePresence>
+            {!showSplash && (
+              <BrowserRouter>
+                <OnboardingTutorial />
+                <EngagementNotification />
+                <PWAInstallBanner />
+                <ShareInviteButton />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/welcome" element={<Welcome />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/equipamentos" element={<Equipamentos />} />
+                  <Route path="/equipamentos/:id" element={<ProdutoDetalhe />} />
+                  <Route path="/ebooks" element={<Ebooks />} />
+                  <Route path="/ebooks/:id" element={<EbookDetalhe />} />
+                  <Route path="/jogos" element={<Jogos />} />
+                  <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
+                  <Route path="/simulador" element={<Simulador />} />
+                  <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
+                  <Route path="/desafios" element={<Desafios />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/perfil" element={<Perfil />} />
+                  <Route path="/comunidade" element={<Comunidade />} />
+                  <Route path="/estatisticas" element={<Estatisticas />} />
+                  <Route
+                    path="/bussola"
+                    element={
+                      <ProtectedRoute>
+                        <Bussola />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            )}
+          </TooltipProvider>
+        </AchievementNotifProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
