@@ -4,9 +4,19 @@
  */
 
 const SOUND_KEY = "sh_sounds_enabled";
+const VOLUME_KEY = "sh_sounds_volume";
 
 export function isSoundEnabled(): boolean {
   return localStorage.getItem(SOUND_KEY) !== "false";
+}
+
+export function getSoundVolume(): number {
+  const v = localStorage.getItem(VOLUME_KEY);
+  return v !== null ? parseFloat(v) : 0.8;
+}
+
+export function setSoundVolume(vol: number) {
+  localStorage.setItem(VOLUME_KEY, String(Math.max(0, Math.min(1, vol))));
 }
 
 export function setSoundEnabled(enabled: boolean) {
@@ -20,6 +30,10 @@ function getCtx(): AudioContext | null {
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
+}
+
+function vol(base: number): number {
+  return base * getSoundVolume();
 }
 
 function playTone(freq: number, duration: number, type: OscillatorType = "sine", gain = 0.15) {
