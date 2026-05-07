@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isSoundEnabled, setSoundEnabled, getSoundVolume, setSoundVolume, playDiscoverSound } from "@/lib/sounds";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
