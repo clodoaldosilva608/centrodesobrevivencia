@@ -230,6 +230,24 @@ const Perfil = () => {
               <span className="text-xs text-muted-foreground w-8 text-right">{Math.round(volume * 100)}%</span>
             </div>
           )}
+
+          {/* Conta */}
+          <div className="mt-4 pt-4 border-t border-border/50">
+            {isAuthenticated && user ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-foreground">Logado como <span className="text-primary font-medium">{user.email}</span></p>
+                  <p className="text-xs text-muted-foreground">via {user.provider === "google" ? "Google" : "E-mail"}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={logout} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </Button>
+              </div>
+            ) : (
+              <a href="/login" className="text-sm text-primary hover:underline">Fazer login →</a>
+            )}
+          </div>
         </div>
 
         {/* Activity History */}
