@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isSoundEnabled, setSoundEnabled, playDiscoverSound } from "@/lib/sounds";
+import { isSoundEnabled, setSoundEnabled, getSoundVolume, setSoundVolume, playDiscoverSound } from "@/lib/sounds";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -8,6 +8,7 @@ import { useStreak } from "@/hooks/useStreak";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -34,6 +35,7 @@ const Perfil = () => {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
+  const [volume, setVolume] = useState(getSoundVolume);
 
   const toggleSound = (val: boolean) => {
     setSoundOn(val);
@@ -211,6 +213,21 @@ const Perfil = () => {
             </div>
             <Switch checked={soundOn} onCheckedChange={toggleSound} />
           </div>
+          {soundOn && (
+            <div className="flex items-center gap-4 p-3 rounded-lg border border-border/50 mt-3">
+              <VolumeX size={16} className="text-muted-foreground shrink-0" />
+              <Slider
+                value={[volume * 100]}
+                max={100}
+                step={5}
+                onValueChange={([v]) => { const nv = v / 100; setVolume(nv); setSoundVolume(nv); }}
+                onValueCommit={() => playDiscoverSound()}
+                className="flex-1"
+              />
+              <Volume2 size={16} className="text-primary shrink-0" />
+              <span className="text-xs text-muted-foreground w-8 text-right">{Math.round(volume * 100)}%</span>
+            </div>
+          )}
         </div>
 
         {/* Activity History */}
