@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX } from "lucide-react";
+import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
