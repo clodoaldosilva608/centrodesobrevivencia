@@ -105,7 +105,7 @@ export function playCompletionSound() {
     const g = ctx.createGain();
     osc.type = "sine";
     osc.frequency.setValueAtTime(freq, t + i * 0.1);
-    g.gain.setValueAtTime(0.14, t + i * 0.1);
+    g.gain.setValueAtTime(vol(0.14), t + i * 0.1);
     g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + 0.5);
     osc.connect(g).connect(ctx.destination);
     osc.start(t + i * 0.1);
@@ -116,5 +116,5 @@ export function playCompletionSound() {
 /** XP gain blip */
 export function playXPSound() {
   if (!isSoundEnabled()) return;
-  playTone(1200, 0.1, "sine", 0.08);
+  playTone(1200, 0.1, "sine", vol(0.08));
 }
