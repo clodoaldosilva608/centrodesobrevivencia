@@ -35,6 +35,7 @@ const Perfil = () => {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
+  const [volume, setVolume] = useState(getSoundVolume);
 
   const toggleSound = (val: boolean) => {
     setSoundOn(val);
