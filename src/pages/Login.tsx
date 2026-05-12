@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 
 const Login = () => {
   const { loginWithGoogle, loginWithEmail, isAuthenticated } = useAuth();
@@ -37,6 +38,7 @@ const Login = () => {
 
   return (
     <Layout>
+      <SEO title="Login — Centro de Sobrevivência" description="Entre com Google ou e-mail para acessar a bússola tática e recursos exclusivos." />
       <div className="min-h-[80vh] flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { User, Trophy, Gamepad2, Zap, Star, Pencil, Check, Gift, Clock, Flame, History, Volume2, VolumeX, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 const BADGE_RARITY: Record<string, { label: string; color: string; border: string; bg: string }> = {
   "first-challenge": { label: "Bronze", color: "text-amber-700", border: "border-amber-600/50", bg: "bg-amber-900/20" },
@@ -79,6 +80,7 @@ const Perfil = () => {
 
   return (
     <Layout>
+      <SEO title="Perfil do Usuário — Configurações" description="Gerencie nome, sons, tema e veja seu nível, XP, streak e conquistas." />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-card rounded-xl border border-border p-6 md:p-8 mb-8">

@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { playDiscoverSound } from "@/lib/sounds";
+import SEO from "@/components/SEO";
 
 // Conversões de coordenadas
 function toDMS(deg: number, isLat: boolean): string {
@@ -179,6 +180,7 @@ const Bussola = () => {
 
   return (
     <Layout>
+      <SEO title="Bússola Tática — Navegação e GPS" description="Bússola digital com geolocalização, altitude, velocidade, posição solar e coordenadas DMS." />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <motion.div

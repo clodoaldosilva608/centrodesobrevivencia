@@ -5,6 +5,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "sonner";
 import { ArrowLeft, Heart, Droplets, Zap, TreePine, Flame, Home, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import SEO from "@/components/SEO";
 
 interface GameState {
   health: number;
@@ -324,6 +325,7 @@ const SimuladorFloresta = () => {
 
   return (
     <Layout>
+      <SEO title="Simulador Floresta — Sobreviva 7 Dias" description="Simulador realista em Canvas: gerencie saúde, água e energia para sobreviver na floresta." />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <Link to="/jogos" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary text-sm mb-8 transition-colors">
           <ArrowLeft size={16} /> Voltar aos jogos

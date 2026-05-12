@@ -6,6 +6,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import EbookCard from "@/components/EbookCard";
 import { ebooks } from "@/data/mockData";
 import { BookOpen, Search } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const Ebooks = () => {
   const categories = useMemo(() => [...new Set(ebooks.map((e) => e.category))], []);
@@ -28,6 +29,7 @@ const Ebooks = () => {
 
   return (
     <Layout>
+      <SEO title="E-books de Bushcraft e Sobrevivência" description="Biblioteca com guias de sobrevivência, primeiros socorros, navegação, fogo, abrigos naturais e bushcraft prático." />
       <Section
         title="Biblioteca de Sobrevivência"
         subtitle="Conhecimento essencial em formato digital — explore, aprenda e sobreviva"

@@ -13,6 +13,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import SEO from "@/components/SEO";
 
 const Estatisticas = () => {
   const { profile, xpProgress, currentLevelXP, xpForNextLevel } = useUserProfile();
@@ -64,6 +65,7 @@ const Estatisticas = () => {
 
   return (
     <Layout>
+      <SEO title="Estatísticas e Progresso Pessoal" description="Acompanhe seu XP, streak, missões diárias, conquistas e gráficos de progresso na plataforma." />
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-heading text-2xl md:text-3xl text-foreground tracking-wider text-center uppercase mb-2">

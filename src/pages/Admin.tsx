@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 type Tab = "produtos" | "ebooks" | "jogos" | "desafios";
 
@@ -91,6 +92,7 @@ const Admin = () => {
 
   return (
     <Layout>
+      <SEO title="Painel Administrativo" description="Área administrativa interna do Centro de Sobrevivência." noIndex />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
