@@ -5,6 +5,7 @@ import heroBg from "@/assets/hero-bg.jpg";
 import Section from "@/components/Section";
 import ContentCard from "@/components/ContentCard";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { products, ebooks, games, challenges } from "@/data/mockData";
 
 const features = [
@@ -17,6 +18,10 @@ const features = [
 const Index = () => {
   return (
     <Layout>
+      <SEO
+        title="Centro de Sobrevivência — Bushcraft e Aventura"
+        description="Hub brasileiro de bushcraft e sobrevivencialismo: equipamentos, e-books, simuladores, mapa interativo, bússola tática e desafios para aventureiros."
+      />
       {/* HERO */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
@@ -78,7 +83,7 @@ const Index = () => {
               className="text-center"
             >
               <f.icon className="mx-auto h-8 w-8 text-primary mb-3" />
-              <h3 className="font-heading text-sm uppercase tracking-wider text-foreground">{f.label}</h3>
+              <h2 className="font-heading text-sm uppercase tracking-wider text-foreground">{f.label}</h2>
               <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
             </motion.div>
           ))}
