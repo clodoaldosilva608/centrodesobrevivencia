@@ -57,6 +57,8 @@ const Navbar = () => {
           <button
             onClick={() => setOpen(!open)}
             className="lg:hidden p-2 text-foreground"
+            aria-label={open ? "Fechar menu de navegação" : "Abrir menu de navegação"}
+            aria-expanded={open}
           >
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>
