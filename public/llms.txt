@@ -1,0 +1,18 @@
+# Centro de Sobrevivência
+
+> Hub brasileiro de bushcraft, sobrevivencialismo e aventura. Reúne equipamentos táticos, e-books, jogos, simuladores, mapa interativo, bússola e desafios gamificados em uma PWA offline-first.
+
+## Páginas
+
+- [Início](/): visão geral da plataforma e destaques.
+- [Equipamentos](/equipamentos): catálogo de gear tático e ferramentas essenciais.
+- [E-books](/ebooks): biblioteca de guias de sobrevivência e bushcraft.
+- [Jogos](/jogos): jogos interativos de sobrevivência.
+- [Simulador](/simulador): simulador de cenários de sobrevivência.
+- [Mapa de Sobrevivência](/mapa-sobrevivencia): mapa interativo com pontos de interesse e progresso por categoria.
+- [Bússola Tática](/bussola): bússola com geolocalização, altitude e posição solar (requer login).
+- [Desafios](/desafios): missões semanais com recompensas em XP.
+- [Comunidade](/comunidade): ranking e interação entre usuários.
+- [Estatísticas](/estatisticas): métricas de progresso pessoal.
+- [Perfil](/perfil): configurações do usuário, sons e tema.
+- [Login](/login): autenticação por e-mail ou Google.

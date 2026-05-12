@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://centrodesobrevivencia.lovable.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/welcome</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/jogos</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/simulador</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/mapa-sobrevivencia</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/desafios</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/comunidade</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/estatisticas</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/bussola</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/login</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/perfil</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+</urlset>
