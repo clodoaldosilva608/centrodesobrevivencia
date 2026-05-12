@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { products } from "@/data/mockData";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
@@ -18,8 +19,31 @@ const ProdutoDetalhe = () => {
     );
   }
 
+  const priceNum = parseFloat(product.price.replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.fullDescription || product.description,
+    image: product.image,
+    category: product.category,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "BRL",
+      price: priceNum.toFixed(2),
+      availability: "https://schema.org/InStock",
+    },
+  };
+
   return (
     <Layout>
+      <SEO
+        title={`${product.name} — Equipamentos`}
+        description={(product.description || product.fullDescription).slice(0, 160)}
+        image={product.image}
+        type="product"
+        jsonLd={jsonLd}
+      />
       <div className="container mx-auto px-4 py-12">
         <Link to="/equipamentos" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm mb-8">
           <ArrowLeft size={16} /> Voltar aos equipamentos
