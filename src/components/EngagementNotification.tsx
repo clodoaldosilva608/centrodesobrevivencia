@@ -94,7 +94,7 @@ const EngagementNotification = () => {
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-[80] bg-card border border-border rounded-xl p-4 shadow-2xl"
         >
-          <button onClick={dismiss} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
+          <button onClick={dismiss} aria-label="Dispensar notificação" className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
             <X size={16} />
           </button>
           <div className="flex items-start gap-3">

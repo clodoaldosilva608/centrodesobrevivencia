@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "@/components/Layout";
 import { TreePine, Droplets, Flame, Compass, Heart, Skull } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface GameState {
   scenario: string;
@@ -91,6 +92,7 @@ const Simulador = () => {
 
   return (
     <Layout>
+      <SEO title="Simulador de Cenários de Sobrevivência" description="Tome decisões em cenários reais de sobrevivência e veja o impacto na sua saúde, água e energia." />
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <h1 className="font-heading text-3xl text-foreground tracking-wider text-center uppercase mb-2">Simulador de Sobrevivência</h1>
         <p className="text-center text-muted-foreground mb-8">Suas decisões determinam seu destino</p>

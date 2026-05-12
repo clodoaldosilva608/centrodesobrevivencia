@@ -54,6 +54,7 @@ const PWAInstallBanner = () => {
           <div className="relative rounded-2xl border border-primary/20 bg-card p-4 shadow-lg shadow-primary/10">
             <button
               onClick={handleDismiss}
+              aria-label="Dispensar banner de instalação"
               className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X size={18} />

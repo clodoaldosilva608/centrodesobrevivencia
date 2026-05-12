@@ -58,6 +58,7 @@ const ShareInviteButton = () => {
       {/* Floating CTA Button */}
       <motion.button
         onClick={nativeShare}
+        aria-label="Compartilhar e convidar amigos"
         className="fixed bottom-20 right-4 z-[80] group"
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
@@ -96,7 +97,7 @@ const ShareInviteButton = () => {
             >
               {/* Header */}
               <div className="relative bg-gradient-to-r from-primary/20 to-primary/5 p-6 pb-4">
-                <button onClick={() => setOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+                <button onClick={() => setOpen(false)} aria-label="Fechar modal de compartilhamento" className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                   <X size={20} />
                 </button>
                 <div className="text-center">

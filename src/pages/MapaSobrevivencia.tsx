@@ -17,6 +17,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { initialPoints, RANDOM_EVENTS, typeConfig, mapLayers, layerTypeConfig } from "@/data/mapData";
 import type { MapPoint, Waypoint } from "@/data/mapTypes";
+import SEO from "@/components/SEO";
 
 /* ───── Helpers ───── */
 const eventIcons: Record<string, React.ReactNode> = {
@@ -207,6 +208,7 @@ const MapaSobrevivencia = () => {
 
   return (
     <Layout>
+      <SEO title="Mapa Interativo de Sobrevivência" description="Mapa Leaflet com pontos de interesse, abrigos, fontes de água, áreas de risco e progresso por categoria." />
       <div className="container mx-auto px-4 py-8 md:py-12">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-heading text-2xl md:text-3xl text-foreground tracking-wider text-center uppercase mb-2">

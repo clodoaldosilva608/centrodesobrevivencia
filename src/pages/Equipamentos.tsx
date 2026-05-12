@@ -6,6 +6,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import EquipmentCard from "@/components/EquipmentCard";
 import { products } from "@/data/mockData";
 import { Package, Search } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const Equipamentos = () => {
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], []);
@@ -28,6 +29,7 @@ const Equipamentos = () => {
 
   return (
     <Layout>
+      <SEO title="Equipamentos Táticos — Gear de Sobrevivência" description="Catálogo de equipamentos de bushcraft, sobrevivencialismo e camping com reviews detalhados, especificações e opções de compra." />
       <Section title="Equipamentos de Sobrevivência" subtitle="Tudo que você precisa para qualquer expedição">
         {/* Search bar */}
         <motion.div

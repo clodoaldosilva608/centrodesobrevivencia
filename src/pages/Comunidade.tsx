@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award, Map } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface ForumPost {
   id: string;
@@ -124,6 +125,7 @@ const Comunidade = () => {
 
   return (
     <Layout>
+      <SEO title="Comunidade — Fórum e Ranking" description="Conecte-se com outros sobreviventes, compartilhe experiências e suba no ranking de XP." />
       <Section title="Comunidade" subtitle="Troque experiências com outros sobreviventes">
         {/* Categories */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">

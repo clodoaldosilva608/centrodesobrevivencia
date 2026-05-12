@@ -7,6 +7,7 @@ import { challenges } from "@/data/mockData";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Trophy, Clock, Zap, CheckCircle, Star } from "lucide-react";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 const Desafios = () => {
   const categories = useMemo(() => [...new Set(challenges.map((c) => c.category))], []);
@@ -42,6 +43,7 @@ const Desafios = () => {
 
   return (
     <Layout>
+      <SEO title="Desafios Semanais de Sobrevivência" description="Complete missões de bushcraft e ganhe XP. Desafios fáceis a extremos com prazos e recompensas." />
       <Section title="Desafios de Sobrevivência" subtitle="Complete desafios semanais e ganhe XP">
         {/* XP bar */}
         <motion.div

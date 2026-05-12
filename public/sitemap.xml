@@ -5,6 +5,7 @@
   <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/ebooks</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/jogos</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/jogos/simulador-sobrevivencia-floresta</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/simulador</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/mapa-sobrevivencia</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/desafios</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -13,4 +14,54 @@
   <url><loc>https://centrodesobrevivencia.lovable.app/bussola</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/login</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://centrodesobrevivencia.lovable.app/perfil</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/mochila-tatica-45l</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/canivete-multiuso-pro</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/lanterna-tatica-3000</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/fogareiro-portatil-ultraleve</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/kit-primeiros-socorros-tatico</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/filtro-agua-portatil</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/corda-paracord-550</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/bussola-profissional</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/rede-camping-mosquiteiro</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/garrafa-termica-sobrevivencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/faca-bushcraft-full-tang</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/barraca-ultracompacta-2p</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/saco-dormir-compact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/kit-fire-starter</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/panela-titanio-camping</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/radio-emergencia-solar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/machado-tatico-compacto</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/binóculos-compactos</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/tarp-impermeavel-3x3</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/purificador-uv-agua</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/luvas-taticas-kevlar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/cobertor-emergencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/serra-bolso-dobravel</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/headlamp-recarregavel</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/pastilhas-purificacao</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/gps-portatil-outdoor</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/kit-sobrevivencia-completo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/colchonete-inflavel-camping</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/apito-emergencia-titanio</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/equipamentos/poncho-chuva-tatico</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/manual-sobrevivencia-selva</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/bushcraft-iniciantes</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/acampamento-selvagem</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/encontrando-agua</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/primeiros-socorros-extremos</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/tecnicas-fogo-natureza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/construindo-abrigos-naturais</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/orientacao-navegacao-natural</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/preparacao-emergencias-urbanas</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/plantas-comestiveis-brasil</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/nos-amarracoes-campo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/sobrevivencia-inverno</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/caca-pesca-sobrevivencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/medicina-natural-campo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/cartografia-leitura-terreno</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/sobrevivencia-mar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/defesa-pessoal-campo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/kit-72h-montagem</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/meteorologia-campo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://centrodesobrevivencia.lovable.app/ebooks/psicologia-sobrevivencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

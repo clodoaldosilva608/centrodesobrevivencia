@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { ebooks } from "@/data/mockData";
 import { ArrowLeft, Download, BookOpen, User, FileText, Tag, ChevronDown } from "lucide-react";
 import { useState } from "react";
@@ -25,8 +26,27 @@ const EbookDetalhe = () => {
   // Find related ebooks (same category, excluding current)
   const related = ebooks.filter((e) => e.category === ebook.category && e.id !== ebook.id).slice(0, 4);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: ebook.title,
+    author: { "@type": "Person", name: ebook.author },
+    description: ebook.synopsis || ebook.description,
+    image: ebook.image,
+    numberOfPages: ebook.pages,
+    genre: ebook.category,
+    inLanguage: "pt-BR",
+  };
+
   return (
     <Layout>
+      <SEO
+        title={`${ebook.title} — E-book`}
+        description={(ebook.description || ebook.synopsis).slice(0, 160)}
+        image={ebook.image}
+        type="book"
+        jsonLd={jsonLd}
+      />
       <div className="container mx-auto px-4 py-12">
         {/* Back link */}
         <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}>
