@@ -95,7 +95,7 @@ const OnboardingTutorial = () => {
           className="relative bg-card border border-border rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
         >
           {/* Close */}
-          <button onClick={finish} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={finish} aria-label="Fechar tutorial de boas-vindas" className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
           </button>
 
