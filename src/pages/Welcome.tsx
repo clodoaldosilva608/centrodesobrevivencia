@@ -16,6 +16,10 @@ const benefits = [
 const Welcome = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="Bem-vindo ao Survival Hub — Sobrevivência e Bushcraft"
+        description="Conheça o Survival Hub: equipamentos táticos, e-books, jogos, mapa interativo e desafios para entusiastas de sobrevivência e bushcraft."
+      />
       {/* Hero section */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <motion.div
