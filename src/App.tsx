@@ -13,6 +13,7 @@ import ProdutoDetalhe from "./pages/ProdutoDetalhe";
 import Ebooks from "./pages/Ebooks";
 import EbookDetalhe from "./pages/EbookDetalhe";
 import Jogos from "./pages/Jogos";
+import JogoDetalhe from "./pages/JogoDetalhe";
 import Simulador from "./pages/Simulador";
 import MapaSobrevivencia from "./pages/MapaSobrevivencia";
 import Desafios from "./pages/Desafios";
