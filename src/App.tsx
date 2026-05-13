@@ -13,6 +13,7 @@ import ProdutoDetalhe from "./pages/ProdutoDetalhe";
 import Ebooks from "./pages/Ebooks";
 import EbookDetalhe from "./pages/EbookDetalhe";
 import Jogos from "./pages/Jogos";
+import JogoDetalhe from "./pages/JogoDetalhe";
 import Simulador from "./pages/Simulador";
 import MapaSobrevivencia from "./pages/MapaSobrevivencia";
 import Desafios from "./pages/Desafios";
@@ -71,6 +72,7 @@ const App = () => {
                   <Route path="/ebooks/:id" element={<EbookDetalhe />} />
                   <Route path="/jogos" element={<Jogos />} />
                   <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
+                  <Route path="/jogos/:id" element={<JogoDetalhe />} />
                   <Route path="/simulador" element={<Simulador />} />
                   <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
                   <Route path="/desafios" element={<Desafios />} />
