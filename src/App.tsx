@@ -72,6 +72,7 @@ const App = () => {
                   <Route path="/ebooks/:id" element={<EbookDetalhe />} />
                   <Route path="/jogos" element={<Jogos />} />
                   <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
+                  <Route path="/jogos/:id" element={<JogoDetalhe />} />
                   <Route path="/simulador" element={<Simulador />} />
                   <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
                   <Route path="/desafios" element={<Desafios />} />
