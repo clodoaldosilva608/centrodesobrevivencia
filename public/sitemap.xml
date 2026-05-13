@@ -315,4 +315,54 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/simulador-floresta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/construa-abrigo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/gerenciamento-recursos</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/exploracao-territorio</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/caca-coleta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/puzzle-sobrevivencia</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/simulador-fogo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/encontre-agua-floresta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/explorador-montanha</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.lovable.app/jogos/missao-sobrevivencia</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>
