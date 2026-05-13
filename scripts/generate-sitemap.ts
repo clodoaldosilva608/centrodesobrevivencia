@@ -39,7 +39,13 @@ const ebookEntries: SitemapEntry[] = ebooks.map((e) => ({
   priority: "0.6",
 }));
 
-const entries: SitemapEntry[] = [...staticEntries, ...productEntries, ...ebookEntries];
+const gameEntries: SitemapEntry[] = games.map((g) => ({
+  path: `/jogos/${encodeURIComponent(g.id)}`,
+  changefreq: "monthly",
+  priority: "0.6",
+}));
+
+const entries: SitemapEntry[] = [...staticEntries, ...productEntries, ...ebookEntries, ...gameEntries];
 
 const xml = [
   `<?xml version="1.0" encoding="UTF-8"?>`,
