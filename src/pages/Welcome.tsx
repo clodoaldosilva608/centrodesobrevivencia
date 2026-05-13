@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Shield, BookOpen, Gamepad2, Trophy, Flame, MapPin, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Shield, title: "Equipamentos Táticos", desc: "Acesse gear essencial para sobrevivência" },
@@ -15,6 +16,10 @@ const benefits = [
 const Welcome = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="Bem-vindo ao Survival Hub — Sobrevivência e Bushcraft"
+        description="Conheça o Survival Hub: equipamentos táticos, e-books, jogos, mapa interativo e desafios para entusiastas de sobrevivência e bushcraft."
+      />
       {/* Hero section */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <motion.div
