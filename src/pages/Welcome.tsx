@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Shield, BookOpen, Gamepad2, Trophy, Flame, MapPin, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Shield, title: "Equipamentos Táticos", desc: "Acesse gear essencial para sobrevivência" },
