@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
         "onlyCategories": ["performance", "accessibility", "best-practices", "seo"]
@@ -9,10 +9,27 @@
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["warn", { "minScore": 0.85 }],
+        "categories:performance": ["error", { "minScore": 0.85 }],
         "categories:accessibility": ["error", { "minScore": 0.9 }],
         "categories:best-practices": ["warn", { "minScore": 0.9 }],
-        "categories:seo": ["error", { "minScore": 0.95 }]
+        "categories:seo": ["error", { "minScore": 0.95 }],
+
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 1800 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
+
+        "heading-order": ["error", { "minScore": 1 }],
+        "document-title": ["error", { "minScore": 1 }],
+        "meta-description": ["error", { "minScore": 1 }],
+        "canonical": ["error", { "minScore": 1 }],
+        "html-has-lang": ["error", { "minScore": 1 }],
+        "image-alt": ["error", { "minScore": 1 }],
+        "link-name": ["error", { "minScore": 1 }],
+        "color-contrast": ["error", { "minScore": 1 }],
+        "robots-txt": ["error", { "minScore": 1 }],
+        "hreflang": ["warn", { "minScore": 1 }],
+        "structured-data": ["warn", { "minScore": 1 }]
       }
     }
   }

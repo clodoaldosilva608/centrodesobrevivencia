@@ -8,8 +8,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # Triggered manually from the Actions tab right after clicking "Update" in
-  # the Lovable publish dialog (frontend changes ship via that button, not git).
   workflow_dispatch:
     inputs:
       target_url:
@@ -20,7 +18,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -37,8 +35,48 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Validate canonical / og:url / og:image on every route
+      - name: Validate canonical / og:url / og:image on every sitemap route
+        id: seo
+        # Continue so we can ALWAYS upload the report, then enforce below.
+        continue-on-error: true
         run: bunx tsx scripts/validate-seo.ts
+
+      - name: Upload SEO validation report (HTML + JSON, per-route failures)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-validation-report
+          path: seo-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Render report summary into PR / job summary
+        if: always()
+        run: |
+          if [ -f seo-report/report.json ]; then
+            echo "## SEO Validation" >> $GITHUB_STEP_SUMMARY
+            node -e "
+              const r = require('./seo-report/report.json');
+              const s = r.summary;
+              console.log('- **Total:** ' + s.total + ' — passed: ' + s.passed + ', failed: ' + s.failed);
+              console.log('');
+              const failed = r.results.filter(x => !x.ok);
+              if (failed.length) {
+                console.log('| Route | Issue | Detail |');
+                console.log('|---|---|---|');
+                for (const f of failed) for (const i of f.issues)
+                  console.log('| \`' + f.route + '\` | \`' + i.code + '\` | ' + i.message.replace(/\|/g,'\\\\|') + ' |');
+              } else {
+                console.log('All routes passed.');
+              }
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail job if validate-seo reported issues
+        if: steps.seo.outcome == 'failure'
+        run: |
+          echo "validate-seo failed — see uploaded artifact 'seo-validation-report' for the full per-route HTML/JSON report."
+          exit 1
 
       - name: Lighthouse CI on the live published site
         uses: treosh/lighthouse-ci-action@v12
