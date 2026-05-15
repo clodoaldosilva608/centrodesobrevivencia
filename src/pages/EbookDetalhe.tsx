@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { ebooks } from "@/data/mockData";
+import { toOgImage } from "@/lib/ogImage";
 import { ArrowLeft, Download, BookOpen, User, FileText, Tag, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -43,7 +44,7 @@ const EbookDetalhe = () => {
       <SEO
         title={`${ebook.title} — E-book`}
         description={(ebook.description || ebook.synopsis).slice(0, 160)}
-        image={ebook.image}
+        image={toOgImage(ebook.image)}
         type="book"
         jsonLd={jsonLd}
       />
