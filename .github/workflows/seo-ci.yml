@@ -1,0 +1,54 @@
+name: SEO & Lighthouse
+
+# Re-validates SEO tags + Lighthouse scores after every publish so route or
+# sitemap changes can't silently break performance / accessibility.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Triggered manually from the Actions tab right after clicking "Update" in
+  # the Lovable publish dialog (frontend changes ship via that button, not git).
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Published URL to audit (defaults to centrodesobrevivencia.lovable.app)"
+        required: false
+        default: "https://centrodesobrevivencia.lovable.app"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Build (also regenerates sitemap via prebuild hook)
+        run: bun run build
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Validate canonical / og:url / og:image on every route
+        run: bunx tsx scripts/validate-seo.ts
+
+      - name: Lighthouse CI on the live published site
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/equipamentos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/ebooks
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/jogos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/bussola
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: ./.lighthouserc.json

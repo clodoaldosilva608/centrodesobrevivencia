@@ -11,6 +11,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "validate:seo": "tsx scripts/validate-seo.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
