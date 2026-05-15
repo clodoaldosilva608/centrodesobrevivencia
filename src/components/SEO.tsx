@@ -2,7 +2,9 @@ import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 
 const SITE_URL = "https://centrodesobrevivencia.lovable.app";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-512.png`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
+const OG_W = 1200;
+const OG_H = 630;
 
 interface SEOProps {
   title: string;
@@ -34,8 +36,8 @@ const SEO = ({ title, description, image, type = "website", jsonLd, noIndex }: S
       <meta property="og:title" content={finalTitle} />
       <meta property="og:description" content={finalDesc} />
       <meta property="og:image" content={finalImage} />
-      <meta property="og:image:width" content="512" />
-      <meta property="og:image:height" content="512" />
+      <meta property="og:image:width" content={String(OG_W)} />
+      <meta property="og:image:height" content={String(OG_H)} />
       <meta property="og:image:alt" content={finalTitle} />
 
       <meta name="twitter:card" content="summary_large_image" />
