@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { games } from "@/data/mockData";
+import { toOgImage } from "@/lib/ogImage";
 import { ArrowLeft, Gamepad2, Target, Cog } from "lucide-react";
 
 const JOGAR_ROUTE: Record<string, string> = {
@@ -46,7 +47,7 @@ const JogoDetalhe = () => {
       <SEO
         title={`${game.name} — Jogos`}
         description={game.description}
-        image={game.image}
+        image={toOgImage(game.image)}
         type="website"
         jsonLd={jsonLd}
       />

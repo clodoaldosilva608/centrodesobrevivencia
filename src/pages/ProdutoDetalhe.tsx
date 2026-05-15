@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { products } from "@/data/mockData";
+import { toOgImage } from "@/lib/ogImage";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 const ProdutoDetalhe = () => {
@@ -40,7 +41,7 @@ const ProdutoDetalhe = () => {
       <SEO
         title={`${product.name} — Equipamentos`}
         description={(product.description || product.fullDescription).slice(0, 160)}
-        image={product.image}
+        image={toOgImage(product.image)}
         type="product"
         jsonLd={jsonLd}
       />
