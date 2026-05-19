@@ -19,6 +19,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -58,14 +62,29 @@ jobs:
             node -e "
               const r = require('./seo-report/report.json');
               const s = r.summary;
-              console.log('- **Total:** ' + s.total + ' — passed: ' + s.passed + ', failed: ' + s.failed);
+              console.log('- **Total:** ' + s.total + ' — passed: ' + s.passed + ', failed: ' + s.failed + ' (concurrency=' + s.concurrency + ')');
               console.log('');
+              console.log('### Failure rate by category');
+              console.log('| Category | Routes failing | Failure % |');
+              console.log('|---|---|---|');
+              for (const c of s.categoryStats) console.log('| \`' + c.category + '\` | ' + c.failedRoutes + ' / ' + c.total + ' | ' + c.failurePct + '% |');
+              console.log('');
+              if (s.ranking.length) {
+                console.log('### Top failing routes');
+                console.log('| # | Route | Issues | Codes |');
+                console.log('|---|---|---|---|');
+                s.ranking.forEach((x, i) => console.log('| ' + (i+1) + ' | \`' + x.route + '\` | ' + x.issues + ' | \`' + x.codes.join(', ') + '\` |'));
+                console.log('');
+              }
               const failed = r.results.filter(x => !x.ok);
               if (failed.length) {
-                console.log('| Route | Issue | Detail |');
-                console.log('|---|---|---|');
-                for (const f of failed) for (const i of f.issues)
-                  console.log('| \`' + f.route + '\` | \`' + i.code + '\` | ' + i.message.replace(/\|/g,'\\\\|') + ' |');
+                console.log('### Per-route failures');
+                console.log('| Route | Issue | Detail | Artifacts |');
+                console.log('|---|---|---|---|');
+                for (const f of failed) for (const i of f.issues) {
+                  const a = f.artifacts ? '[html](' + f.artifacts.html + ') · [png](' + f.artifacts.screenshot + ')' : '—';
+                  console.log('| \`' + f.route + '\` | \`' + i.code + '\` | ' + i.message.replace(/\|/g,'\\\\|') + ' | ' + a + ' |');
+                }
               } else {
                 console.log('All routes passed.');
               }
