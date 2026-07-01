@@ -13,6 +13,7 @@ const navItems = [
   { label: "Simulador", path: "/simulador" },
   { label: "Mapa", path: "/mapa-sobrevivencia" },
   { label: "Bússola", path: "/bussola" },
+  { label: "GIS Tático", path: "/gis" },
   { label: "Desafios", path: "/desafios" },
   { label: "Comunidade", path: "/comunidade" },
   { label: "Perfil", path: "/perfil" },
