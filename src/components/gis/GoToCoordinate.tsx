@@ -44,7 +44,7 @@ const GoToCoordinate = () => {
         <div className="space-y-3">
           <Input
             autoFocus
-            placeholder="Ex.: -15.7801, -47.9292  ou  15°46'48\"S 47°55'45\"W  ou  22LGK1234567890"
+            placeholder={`Ex.: -15.7801, -47.9292  ou  15°46'48"S 47°55'45"W  ou  22LGK1234567890`}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleGo()}
