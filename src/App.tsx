@@ -23,6 +23,7 @@ import Comunidade from "./pages/Comunidade";
 import SimuladorFloresta from "./pages/SimuladorFloresta";
 import Estatisticas from "./pages/Estatisticas";
 import Bussola from "./pages/Bussola";
+import Gis from "./pages/Gis";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OnboardingTutorial from "./components/OnboardingTutorial";
@@ -85,6 +86,14 @@ const App = () => {
                     element={
                       <ProtectedRoute>
                         <Bussola />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/gis"
+                    element={
+                      <ProtectedRoute>
+                        <Gis />
                       </ProtectedRoute>
                     }
                   />
