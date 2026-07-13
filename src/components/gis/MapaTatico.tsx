@@ -6,10 +6,17 @@ import CoordinateReadout from "./CoordinateReadout";
 import GoToCoordinate from "./GoToCoordinate";
 import LayerSwitcher, { BUILT_INS, type BaseLayer } from "./LayerSwitcher";
 import OfflineRegionsManager from "./OfflineRegionsManager";
+import MeasureToolbar, { type Tool } from "./MeasureToolbar";
+import DistanceTool from "./DistanceTool";
+import AreaTool from "./AreaTool";
+import ElevationProfile from "./ElevationProfile";
+import CompassHUD from "./CompassHUD";
 import { getTile, putTile } from "@/lib/tileCache";
+import type { LatLng } from "@/lib/geo";
 import { Locate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
 
 /** Custom Leaflet layer that reads from IndexedDB before hitting the network. */
 class CachedTileLayer extends L.TileLayer {
@@ -59,7 +66,7 @@ const CachedTiles = ({ layer }: { layer: BaseLayer }) => {
   return null;
 };
 
-const LocateButton = () => {
+const LocateButton = ({ onLocated }: { onLocated: (p: LatLng) => void }) => {
   const map = useMap();
   const [loading, setLoading] = useState(false);
   return (
@@ -77,7 +84,9 @@ const LocateButton = () => {
         setLoading(true);
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 1.2 });
+            const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            map.flyTo([p.lat, p.lng], 15, { duration: 1.2 });
+            onLocated(p);
             setLoading(false);
           },
           () => { toast.error("Não foi possível obter sua posição"); setLoading(false); },
@@ -94,6 +103,22 @@ interface Props { className?: string; }
 
 const MapaTatico = ({ className = "" }: Props) => {
   const [layer, setLayer] = useState<BaseLayer>(BUILT_INS[0]);
+  const [tool, setTool] = useState<Tool>(null);
+  const [distancePath, setDistancePath] = useState<LatLng[]>([]);
+  const [areaPath, setAreaPath] = useState<LatLng[]>([]);
+  const [elevationOpen, setElevationOpen] = useState(false);
+  const [userPosition, setUserPosition] = useState<LatLng | null>(null);
+  const [unit, setUnit] = useState<"metric" | "nautical">(() =>
+    (localStorage.getItem("sh_gis_unit") as "metric" | "nautical") || "metric"
+  );
+
+  useEffect(() => { localStorage.setItem("sh_gis_unit", unit); }, [unit]);
+
+  const clearAll = () => {
+    setDistancePath([]);
+    setAreaPath([]);
+    setTool(null);
+  };
 
   return (
     <div className={`relative w-full h-full ${className}`}>
@@ -106,13 +131,58 @@ const MapaTatico = ({ className = "" }: Props) => {
       >
         <CachedTiles layer={layer} />
         <CoordinateReadout />
+
+        <DistanceTool
+          active={tool === "distance"}
+          unit={unit}
+          points={distancePath}
+          onPathChange={setDistancePath}
+          onFinish={() => setTool(null)}
+        />
+        <AreaTool
+          active={tool === "area"}
+          points={areaPath}
+          onChange={setAreaPath}
+          onFinish={() => setTool(null)}
+        />
+
         <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
           <LayerSwitcher activeId={layer.id} onChange={setLayer} />
           <OfflineRegionsManager activeLayerUrl={layer.url} activeLayerName={layer.name} />
           <GoToCoordinate />
-          <LocateButton />
+          <LocateButton onLocated={setUserPosition} />
+        </div>
+
+        <div className="absolute top-4 left-4 z-[400]">
+          <MeasureToolbar
+            tool={tool}
+            onToolChange={setTool}
+            onOpenElevation={() => setElevationOpen(true)}
+            onClear={clearAll}
+            elevationEnabled={distancePath.length >= 2}
+            unit={unit}
+            onUnitChange={setUnit}
+          />
         </div>
       </MapContainer>
+
+      <AnimatePresence>
+        {tool === "compass" && (
+          <CompassHUD
+            open
+            onClose={() => setTool(null)}
+            userPosition={userPosition}
+            target={distancePath.length > 0 ? distancePath[distancePath.length - 1] : null}
+            targetLabel={distancePath.length > 0 ? "Último ponto medido" : undefined}
+          />
+        )}
+      </AnimatePresence>
+
+      <ElevationProfile
+        open={elevationOpen}
+        onOpenChange={setElevationOpen}
+        path={distancePath}
+      />
     </div>
   );
 };
