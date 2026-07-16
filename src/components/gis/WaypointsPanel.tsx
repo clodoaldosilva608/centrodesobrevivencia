@@ -8,7 +8,8 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { List, Search, Trash2, Crosshair, Pencil, Route as RouteIcon, MapPin } from "lucide-react";
-import type { Waypoint, Route, WaypointType, LatLng } from "@/data/mapTypes";
+import type { Waypoint, Route, WaypointType } from "@/data/mapTypes";
+import type { LatLng } from "@/lib/geo";
 import { WAYPOINT_TYPES, WAYPOINT_TYPE_LIST } from "@/data/waypointTypes";
 import { haversine, formatDistance } from "@/lib/geo";
 import { cn } from "@/lib/utils";
