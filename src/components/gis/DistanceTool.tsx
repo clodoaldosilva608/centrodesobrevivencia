@@ -3,7 +3,7 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { haversine, formatDistance, type LatLng, pathLength } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, Save } from "lucide-react";
 
 interface Props {
   active: boolean;
@@ -11,9 +11,10 @@ interface Props {
   onPathChange: (pts: LatLng[]) => void;
   points: LatLng[];
   onFinish: () => void;
+  onSaveRoute?: (points: LatLng[]) => void;
 }
 
-const DistanceTool = ({ active, unit, onPathChange, points, onFinish }: Props) => {
+const DistanceTool = ({ active, unit, onPathChange, points, onFinish, onSaveRoute }: Props) => {
   const map = useMap();
   const layerRef = useRef<L.LayerGroup | null>(null);
 
@@ -23,7 +24,6 @@ const DistanceTool = ({ active, unit, onPathChange, points, onFinish }: Props) =
     return () => { layer.clearLayers(); };
   }, [map]);
 
-  // Redesenha ao mudar pontos
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return;
@@ -37,7 +37,6 @@ const DistanceTool = ({ active, unit, onPathChange, points, onFinish }: Props) =
         fillOpacity: 1, weight: 2,
       }).addTo(layer).bindTooltip(`${i + 1}`, { permanent: false });
     });
-    // Rótulos por segmento
     for (let i = 1; i < points.length; i++) {
       const d = haversine(points[i - 1], points[i]);
       const mid: [number, number] = [
@@ -90,6 +89,11 @@ const DistanceTool = ({ active, unit, onPathChange, points, onFinish }: Props) =
         <Button size="sm" variant="secondary" onClick={onFinish} disabled={points.length < 2} aria-label="Concluir">
           <Check size={16} />
         </Button>
+        {onSaveRoute && (
+          <Button size="sm" variant="secondary" onClick={() => onSaveRoute(points)} disabled={points.length < 2} aria-label="Salvar como rota" title="Salvar como rota">
+            <Save size={16} />
+          </Button>
+        )}
         <Button size="sm" variant="ghost" onClick={() => onPathChange([])} aria-label="Limpar">
           <X size={16} />
         </Button>

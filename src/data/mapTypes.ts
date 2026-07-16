@@ -26,6 +26,18 @@ export interface TypeConfig {
   emoji: string;
 }
 
+export type WaypointType =
+  | "base"
+  | "agua"
+  | "perigo"
+  | "abrigo"
+  | "recurso"
+  | "observacao"
+  | "rota"
+  | "extracao"
+  | "contato"
+  | "generico";
+
 export interface Waypoint {
   id: string;
   lat: number;
@@ -33,5 +45,15 @@ export interface Waypoint {
   name: string;
   note: string;
   color: string;
+  type: WaypointType;
+  createdAt: string;
+}
+
+export interface Route {
+  id: string;
+  name: string;
+  color: string;
+  points: { lat: number; lng: number }[];
+  notes?: string;
   createdAt: string;
 }
