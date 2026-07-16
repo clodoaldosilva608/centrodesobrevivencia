@@ -148,7 +148,7 @@ const RouteLayer = ({ points, color }: { points: LatLng[]; color: string }) => {
   const map = useMap();
   useEffect(() => {
     if (!points.length) return;
-    const line = L.polyline(points.map((p) => [p.lat, p.lng]), {
+    const line = L.polyline(points.map((p) => [p.lat, p.lng] as [number, number]), {
       color, weight: 4, opacity: 0.85, dashArray: "8,4",
     }).addTo(map);
     map.fitBounds(line.getBounds(), { padding: [40, 40], maxZoom: 15 });
