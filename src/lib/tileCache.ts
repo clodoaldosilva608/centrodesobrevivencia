@@ -1,7 +1,8 @@
-import { get, set, del, keys, createStore } from "idb-keyval";
+import { get, set, del, keys, clear, createStore } from "idb-keyval";
 
 const store = createStore("sh-tile-cache", "tiles");
 const META_KEY = "__regions__";
+export const AVG_TILE_BYTES = 18_000;
 
 export interface CachedRegion {
   id: string;
@@ -11,8 +12,12 @@ export interface CachedRegion {
   maxZoom: number;
   layerUrl: string;
   tileCount: number;
+  failed?: number;
+  bytes?: number;
   createdAt: string;
 }
+
+export interface DownloadControl { paused: boolean; cancelled: boolean; }
 
 const tileKey = (url: string) => `t:${url}`;
 
@@ -73,33 +78,45 @@ export const removeRegion = async (id: string) => {
   }
 };
 
+/** Apaga todos os tiles e regiões do IndexedDB. */
+export const clearAllTiles = async () => clear(store);
+
 export const cacheRegion = async (
   region: Omit<CachedRegion, "tileCount" | "createdAt">,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: (done: number, total: number, failed: number) => void,
+  control?: DownloadControl,
 ): Promise<CachedRegion> => {
   const urls = enumerateTiles(region.bbox, region.minZoom, region.maxZoom, region.layerUrl);
-  let done = 0;
+  let done = 0, failed = 0, bytes = 0;
   const CONCURRENCY = 6;
   const queue = [...urls];
   const workers = Array.from({ length: CONCURRENCY }, async () => {
     while (queue.length) {
+      while (control?.paused && !control.cancelled) await new Promise((r) => setTimeout(r, 300));
+      if (control?.cancelled) return;
       const url = queue.shift();
       if (!url) return;
       try {
         const existing = await getTile(url);
-        if (!existing) {
+        if (existing) bytes += existing.size;
+        else {
           const res = await fetch(url, { mode: "cors" });
-          if (res.ok) await putTile(url, await res.blob());
+          if (res.ok) {
+            const blob = await res.blob();
+            bytes += blob.size;
+            await putTile(url, blob);
+          } else failed += 1;
         }
       } catch {
-        /* ignore individual failures */
+        failed += 1;
       }
       done += 1;
-      onProgress?.(done, urls.length);
+      onProgress?.(done, urls.length, failed);
     }
   });
   await Promise.all(workers);
-  const meta: CachedRegion = { ...region, tileCount: urls.length, createdAt: new Date().toISOString() };
+  if (control?.cancelled) throw new Error("cancelled");
+  const meta: CachedRegion = { ...region, tileCount: urls.length, failed, bytes, createdAt: new Date().toISOString() };
   await saveRegionMeta(meta);
   return meta;
 };
@@ -109,3 +126,12 @@ export const cacheStats = async (): Promise<{ tiles: number; regions: number }> 
   const regions = await listRegions();
   return { tiles: ks.filter((k) => typeof k === "string" && k.startsWith("t:")).length, regions: regions.length };
 };
+
+export const storageEstimate = async (): Promise<{ usage: number; quota: number } | null> => {
+  if (!navigator.storage?.estimate) return null;
+  const e = await navigator.storage.estimate();
+  return { usage: e.usage ?? 0, quota: e.quota ?? 0 };
+};
+
+export const formatBytes = (b: number) =>
+  b > 1e9 ? `${(b / 1e9).toFixed(2)} GB` : b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.round(b / 1e3)} KB`;

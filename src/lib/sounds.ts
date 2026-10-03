@@ -118,3 +118,28 @@ export function playXPSound() {
   if (!isSoundEnabled()) return;
   playTone(1200, 0.1, "sine", vol(0.08));
 }
+
+/** SOS em Morse (... --- ...) em loop. Ignora o toggle de sons (emergência). Retorna função de parada. */
+export function startSosMorse(): () => void {
+  const ctx = new AudioContext();
+  const u = 0.12;
+  const pattern = [1, 1, 1, 3, 3, 3, 1, 1, 1]; // em unidades
+  const cycle = () => {
+    let t = ctx.currentTime + 0.05;
+    pattern.forEach((len, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 880;
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.setValueAtTime(0, t + len * u);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + len * u);
+      t += len * u + (i === 2 || i === 5 ? 3 * u : u);
+    });
+  };
+  cycle();
+  const id = window.setInterval(cycle, 4000);
+  return () => { window.clearInterval(id); ctx.close().catch(() => {}); };
+}
