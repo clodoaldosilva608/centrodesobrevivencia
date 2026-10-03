@@ -55,5 +55,7 @@ export interface Route {
   color: string;
   points: { lat: number; lng: number }[];
   notes?: string;
+  /** Perfil de elevação amostrado (cache) */
+  profile?: { dist: number; elevation: number }[];
   createdAt: string;
 }
