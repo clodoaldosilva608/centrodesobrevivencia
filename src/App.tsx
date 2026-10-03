@@ -78,7 +78,11 @@ const App = () => {
                   <Route path="/simulador" element={<Simulador />} />
                   <Route path="/mapa-sobrevivencia" element={<MapaSobrevivencia />} />
                   <Route path="/desafios" element={<Desafios />} />
-                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/admin" element={
+                    <ProtectedRoute adminOnly>
+                      <Admin />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/perfil" element={<Perfil />} />
                   <Route path="/comunidade" element={<Comunidade />} />
                   <Route path="/estatisticas" element={<Estatisticas />} />
