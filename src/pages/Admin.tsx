@@ -336,9 +336,9 @@ const Admin = () => {
             >
               <t.icon size={16} /> {t.label}
               <span className="ml-1 text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                {activeTab === "produtos" ? products.length :
-                  activeTab === "ebooks" ? ebooks.length :
-                  activeTab === "jogos" ? games.length :
+                {t.key === "produtos" ? products.length :
+                  t.key === "ebooks" ? ebooks.length :
+                  t.key === "jogos" ? games.length :
                   challenges.length}
               </span>
             </button>
