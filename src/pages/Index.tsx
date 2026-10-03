@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Compass, Flame, Mountain, Shield } from "lucide-react";
+import { Compass, Flame, Mountain, Shield, Globe, ExternalLink } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import Section from "@/components/Section";
 import ContentCard from "@/components/ContentCard";
@@ -87,6 +87,42 @@ const Index = () => {
               <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* OSIRIS banner — inteligência global em tempo real */}
+      <section className="relative py-12 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-10" />
+        <div className="relative container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-2xl border-2 border-primary/30 bg-card/80 backdrop-blur p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6"
+          >
+            <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center">
+              <Globe size={36} className="text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-full mb-2">
+                🛰️ Novo · Inteligência em tempo real
+              </span>
+              <h2 className="font-heading text-xl md:text-2xl text-foreground uppercase tracking-wider mb-2">
+                Visão OSIRIS
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                Globo 3D com satélites, câmeras ao vivo, terremotos, incêndios, conflitos e notícias 24/7.
+                Dados de fontes públicas como USGS, NASA FIRMS, NOAA e emissoras internacionais, integrados ao Centro de Sobrevivência.
+              </p>
+            </div>
+            <Link
+              to="/visao-osiris"
+              className="flex-shrink-0 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-6 py-3 rounded-md hover:opacity-90 transition-opacity text-sm flex items-center gap-2"
+            >
+              Abrir Globo 3D <ExternalLink size={14} />
+            </Link>
+          </motion.div>
         </div>
       </section>
 

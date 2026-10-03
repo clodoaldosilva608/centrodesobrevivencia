@@ -14,12 +14,13 @@ const navItems = [
   { label: "Mapa", path: "/mapa-sobrevivencia" },
   { label: "Bússola", path: "/bussola" },
   { label: "GIS Tático", path: "/gis" },
+  { label: "Visão OSIRIS", path: "/visao-osiris", highlight: true },
   { label: "Desafios", path: "/desafios" },
   { label: "Comunidade", path: "/comunidade" },
   { label: "Perfil", path: "/perfil" },
   { label: "Estatísticas", path: "/estatisticas" },
   { label: "Admin", path: "/admin" },
-];
+] as const;
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -44,7 +45,9 @@ const Navbar = () => {
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 location.pathname === item.path
                   ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "highlight" in item && item.highlight
+                    ? "text-primary border border-primary/40 hover:bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {item.label}
@@ -84,7 +87,9 @@ const Navbar = () => {
                   className={`block px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                     location.pathname === item.path
                       ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      : "highlight" in item && item.highlight
+                        ? "text-primary border border-primary/40 hover:bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   {item.label}
