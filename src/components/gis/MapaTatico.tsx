@@ -24,6 +24,8 @@ import { Locate, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { AnimatePresence } from "framer-motion";
+import OsirisOverlayLayer, { DEFAULT_STATE, type OsirisLayerId, type OsirisLayerState } from "./OsirisOverlayLayer";
+import OsirisPanel from "./OsirisPanel";
 
 class CachedTileLayer extends L.TileLayer {
   createTile(coords: L.Coords, done: L.DoneCallback): HTMLElement {
@@ -187,6 +189,45 @@ const MapaTatico = ({ className = "" }: Props) => {
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
   const [flyTarget, setFlyTarget] = useState<LatLng | null>(null);
 
+  // OSIRIS overlays
+  const [osirisEnabled, setOsirisEnabled] = useState<OsirisLayerState>(DEFAULT_STATE);
+  const [osirisCounts, setOsirisCounts] = useState<Partial<Record<OsirisLayerId, number>>>({});
+  const [osirisErrors, setOsirisErrors] = useState<Partial<Record<OsirisLayerId, string>>>({});
+  const [osirisLoading, setOsirisLoading] = useState<Partial<Record<OsirisLayerId, boolean>>>({});
+
+  const toggleOsiris = (id: OsirisLayerId, on: boolean) => {
+    setOsirisEnabled((prev) => {
+      const next = { ...prev, [id]: on };
+      if (on) {
+        setOsirisLoading((l) => ({ ...l, [id]: true }));
+        // Marca como não-loading após 3s (fallback caso o callback não chame)
+        window.setTimeout(() => {
+          setOsirisLoading((l) => ({ ...l, [id]: false }));
+        }, 3000);
+      } else {
+        setOsirisCounts((c) => ({ ...c, [id]: 0 }));
+        setOsirisErrors((e) => { const { [id]: _, ...rest } = e; return rest; });
+        setOsirisLoading((l) => { const { [id]: _, ...rest } = l; return rest; });
+      }
+      return next;
+    });
+  };
+
+  const handleOsirisCounts = (counts: Partial<Record<OsirisLayerId, number>>) => {
+    setOsirisCounts((c) => ({ ...c, ...counts }));
+    setOsirisLoading((l) => {
+      const next = { ...l };
+      for (const k of Object.keys(counts) as OsirisLayerId[]) next[k] = false;
+      return next;
+    });
+  };
+
+  const handleOsirisError = (id: OsirisLayerId, msg: string) => {
+    setOsirisErrors((e) => ({ ...e, [id]: msg }));
+    setOsirisLoading((l) => ({ ...l, [id]: false }));
+    toast.error(`Camada OSIRIS "${id}" falhou`, { description: msg });
+  };
+
   useEffect(() => { localStorage.setItem("sh_gis_unit", unit); }, [unit]);
 
   const selectedWaypoint = useMemo(
@@ -273,6 +314,12 @@ const MapaTatico = ({ className = "" }: Props) => {
         {activeRoute && <RouteLayer points={activeRoute.points} color={activeRoute.color} />}
         <FlyController target={flyTarget} />
 
+        <OsirisOverlayLayer
+          enabled={osirisEnabled}
+          onCounts={handleOsirisCounts}
+          onError={handleOsirisError}
+        />
+
         <DistanceTool
           active={tool === "distance"}
           unit={unit}
@@ -289,6 +336,13 @@ const MapaTatico = ({ className = "" }: Props) => {
         />
 
         <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+          <OsirisPanel
+            enabled={osirisEnabled}
+            onToggle={toggleOsiris}
+            counts={osirisCounts}
+            errors={osirisErrors}
+            loading={osirisLoading}
+          />
           <LayerSwitcher activeId={layer.id} onChange={setLayer} />
           <OfflineRegionsManager activeLayerUrl={layer.url} activeLayerName={layer.name} />
           <GoToCoordinate />

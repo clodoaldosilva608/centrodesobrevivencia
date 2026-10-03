@@ -25,6 +25,7 @@ import Estatisticas from "./pages/Estatisticas";
 import Bussola from "./pages/Bussola";
 import Gis from "./pages/Gis";
 import Login from "./pages/Login";
+import VisaoOsiris from "./pages/VisaoOsiris";
 import NotFound from "./pages/NotFound";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
@@ -97,6 +98,7 @@ const App = () => {
                       </ProtectedRoute>
                     }
                   />
+                  <Route path="/visao-osiris" element={<VisaoOsiris />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

@@ -61,6 +61,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://centrodesobrevivencia.app/visao-osiris</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://centrodesobrevivencia.app/login</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

@@ -24,6 +24,7 @@ const staticEntries: SitemapEntry[] = [
   { path: "/comunidade", changefreq: "weekly", priority: "0.7" },
   { path: "/estatisticas", changefreq: "monthly", priority: "0.5" },
   { path: "/bussola", changefreq: "monthly", priority: "0.6" },
+  { path: "/visao-osiris", changefreq: "weekly", priority: "0.7" },
   { path: "/login", changefreq: "yearly", priority: "0.3" },
 ];
 

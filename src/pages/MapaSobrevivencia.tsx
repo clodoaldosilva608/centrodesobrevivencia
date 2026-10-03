@@ -8,11 +8,13 @@ import { playDiscoverSound, playMilestoneSound, playCompletionSound, playXPSound
 import {
   Droplets, Mountain, AlertTriangle, Zap, MapPin, Compass, Skull, Apple, Flame,
   Shield, X, Navigation, Locate, Plus, Trash2, Route, Tent, TriangleAlert,
-  Eye, EyeOff, Flag, Search, Filter
+  Eye, EyeOff, Flag, Search, Filter, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents } from "react-leaflet";
+import OsirisOverlayLayer, { DEFAULT_STATE, type OsirisLayerId, type OsirisLayerState } from "@/components/gis/OsirisOverlayLayer";
+import OsirisPanel from "@/components/gis/OsirisPanel";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { initialPoints, RANDOM_EVENTS, typeConfig, mapLayers, layerTypeConfig } from "@/data/mapData";
@@ -78,6 +80,12 @@ const MapaSobrevivencia = () => {
   const [activeEvent, setActiveEvent] = useState<(typeof RANDOM_EVENTS)[0] | null>(null);
   const [eventResult, setEventResult] = useState<{ effect: string; xp: number; outcome: string } | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  // OSIRIS overlays (camadas globais em tempo real)
+  const [osirisEnabled, setOsirisEnabled] = useState<OsirisLayerState>(DEFAULT_STATE);
+  const [osirisCounts, setOsirisCounts] = useState<Partial<Record<OsirisLayerId, number>>>({});
+  const setOsirisToggle = (id: OsirisLayerId, on: boolean) =>
+    setOsirisEnabled((prev) => ({ ...prev, [id]: on }));
   const { addXP, checkMapAchievements, unlockAchievement } = useUserProfile();
   const { waypoints, addWaypoint, removeWaypoint, clearWaypoints } = useWaypoints();
 
@@ -304,6 +312,12 @@ const MapaSobrevivencia = () => {
               )}
 
               <LocateButton />
+
+              <OsirisOverlayLayer
+                enabled={osirisEnabled}
+                onCounts={setOsirisCounts}
+                onError={(id, msg) => { toast.error(`OSIRIS ${id}: ${msg}`); }}
+              />
             </MapContainer>
 
             <div className="absolute top-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center border border-border shadow-md">
@@ -362,6 +376,23 @@ const MapaSobrevivencia = () => {
                   Rotas de Fuga
                 </button>
               </div>
+            </div>
+
+            {/* OSIRIS Intel — overlay de camadas globais */}
+            <div className="bg-gradient-card rounded-xl border border-border p-4">
+              <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
+                <Globe size={14} className="text-primary" /> Intel OSIRIS
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Camadas globais em tempo real: terremotos, incêndios, conflitos, clima severo, marítimo, notícias e satélites.
+              </p>
+              <OsirisPanel
+                enabled={osirisEnabled}
+                onToggle={setOsirisToggle}
+                counts={osirisCounts}
+                errors={{}}
+                loading={{}}
+              />
             </div>
 
             {/* Waypoints */}
