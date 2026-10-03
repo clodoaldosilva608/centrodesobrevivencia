@@ -123,9 +123,9 @@ const OsirisPanel = ({ enabled, onToggle, counts, errors, loading }: Props) => {
           size="icon"
           variant={activeCount > 0 ? "default" : "secondary"}
           aria-label="Intel OSIRIS"
-          className="h-12 w-12 shadow-lg relative"
+          className="h-10 w-10 sm:h-12 sm:w-12 shadow-lg relative"
         >
-          <Globe size={20} />
+          <Globe size={18} />
           {activeCount > 0 && (
             <span
               className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center"

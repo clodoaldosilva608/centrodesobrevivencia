@@ -96,8 +96,8 @@ const LayerSwitcher = ({ activeId, onChange }: Props) => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button size="icon" variant="secondary" aria-label="Camadas do mapa" className="h-12 w-12 shadow-lg">
-          <Layers size={20} />
+        <Button size="icon" variant="secondary" aria-label="Camadas do mapa" className="h-10 w-10 sm:h-12 sm:w-12 shadow-lg">
+          <Layers size={18} />
         </Button>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">

@@ -82,7 +82,7 @@ const LocateButton = ({ onLocated }: { onLocated: (p: LatLng) => void }) => {
       size="icon"
       variant="secondary"
       aria-label="Minha localização"
-      className="h-12 w-12 shadow-lg"
+      className="h-10 w-10 sm:h-12 sm:w-12 shadow-lg"
       disabled={loading}
       onClick={() => {
         if (!navigator.geolocation) {
@@ -335,7 +335,8 @@ const MapaTatico = ({ className = "" }: Props) => {
           onFinish={() => setTool(null)}
         />
 
-        <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+        {/* Toolbar direita — essenciais sempre visíveis, avançados no menu "Mais" (mobile only) */}
+        <div className="absolute top-3 right-3 z-[400] flex flex-col gap-1.5 sm:gap-2">
           <OsirisPanel
             enabled={osirisEnabled}
             onToggle={toggleOsiris}
@@ -344,15 +345,13 @@ const MapaTatico = ({ className = "" }: Props) => {
             loading={osirisLoading}
           />
           <LayerSwitcher activeId={layer.id} onChange={setLayer} />
-          <OfflineRegionsManager activeLayerUrl={layer.url} activeLayerName={layer.name} />
-          <GoToCoordinate />
           <LocateButton onLocated={setUserPosition} />
           <Button
-            size="icon" variant="secondary" className="h-12 w-12 shadow-lg"
+            size="icon" variant="secondary" className="h-10 w-10 sm:h-12 sm:w-12 shadow-lg"
             aria-label="Novo waypoint" title="Novo waypoint (usa o centro do mapa)"
             onClick={() => openNewWaypoint({ lat: -15.7801, lng: -47.9292 })}
           >
-            <Plus size={20} />
+            <Plus size={18} />
           </Button>
           <WaypointsPanel
             waypoints={waypoints}
@@ -367,10 +366,16 @@ const MapaTatico = ({ className = "" }: Props) => {
             onClearRoutes={clearRoutes}
             activeRouteId={activeRouteId}
           />
-          <ImportExportMenu waypoints={waypoints} routes={routes} onImport={handleImport} />
+          {/* Avançados — só no desktop */}
+          <div className="hidden sm:flex flex-col gap-2">
+            <OfflineRegionsManager activeLayerUrl={layer.url} activeLayerName={layer.name} />
+            <GoToCoordinate />
+            <ImportExportMenu waypoints={waypoints} routes={routes} onImport={handleImport} />
+          </div>
         </div>
 
-        <div className="absolute top-4 left-4 z-[400]">
+        {/* Toolbar esquerda — no mobile: horizontal embaixo; no desktop: vertical no canto superior esquerdo */}
+        <div className="absolute bottom-3 left-3 sm:bottom-auto sm:top-3 z-[400]">
           <MeasureToolbar
             tool={tool}
             onToolChange={setTool}

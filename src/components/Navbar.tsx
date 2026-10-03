@@ -26,11 +26,11 @@ const Navbar = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Survival Hub" className="h-10 w-10" />
-          <span className="font-heading text-xl tracking-wider text-gradient-survival">
+    <nav className="fixed top-0 left-0 right-0 z-[1500] bg-background/95 backdrop-blur-xl border-b border-border">
+      <div className="container mx-auto flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4">
+        <Link to="/" className="flex items-center gap-2 min-w-0">
+          <img src={logo} alt="Survival Hub" className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" />
+          <span className="font-heading text-base sm:text-xl tracking-wider text-gradient-survival truncate">
             SURVIVAL HUB
           </span>
         </Link>
@@ -52,7 +52,7 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <ThemeToggle />
           {/* Mobile toggle */}
           <button
@@ -73,15 +73,15 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-background border-b border-border overflow-hidden"
+            className="lg:hidden bg-background border-b border-border overflow-hidden max-h-[80vh] overflow-y-auto"
           >
-            <div className="px-4 py-4 space-y-1">
+            <div className="px-3 sm:px-4 py-3 space-y-1">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`block px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                     location.pathname === item.path
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"

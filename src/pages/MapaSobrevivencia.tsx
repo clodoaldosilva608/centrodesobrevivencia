@@ -240,7 +240,7 @@ const MapaSobrevivencia = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="relative rounded-xl border border-border overflow-hidden shadow-lg"
-            style={{ height: "550px" }}
+            style={{ height: "min(60vh, 550px)" }}
           >
             {placingWaypoint && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-primary text-primary-foreground px-4 py-2 rounded-full text-xs font-bold shadow-lg animate-pulse">
@@ -326,7 +326,7 @@ const MapaSobrevivencia = () => {
           </motion.div>
 
           {/* Sidebar */}
-          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+          <div className="space-y-4 lg:max-h-[600px] lg:overflow-y-auto pb-4 lg:pb-0">
             {/* Search & Filter */}
             <div className="bg-gradient-card rounded-xl border border-border p-4">
               <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">

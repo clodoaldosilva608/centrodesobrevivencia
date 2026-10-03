@@ -10,7 +10,7 @@ const Gis = () => (
     />
     <div className="fixed inset-0 flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-16 relative">
+      <main className="flex-1 pt-14 sm:pt-16 relative">
         <MapaTatico />
       </main>
     </div>

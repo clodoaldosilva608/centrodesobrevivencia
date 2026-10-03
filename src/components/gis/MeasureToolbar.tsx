@@ -14,19 +14,20 @@ interface Props {
   onUnitChange: (u: "metric" | "nautical") => void;
 }
 
-const btn = "h-12 w-12 shadow-lg";
+const btn = "h-10 w-10 sm:h-12 sm:w-12 shadow-lg";
 
 const MeasureToolbar = ({
   tool, onToolChange, onOpenElevation, onClear, elevationEnabled, unit, onUnitChange,
 }: Props) => (
-  <div className="flex flex-col gap-2">
+  // No mobile: horizontal row na parte de baixo; no desktop: vertical column no canto
+  <div className="flex sm:flex-col gap-1.5 sm:gap-2">
     <Button
       size="icon" variant={tool === "distance" ? "default" : "secondary"}
       className={cn(btn, tool === "distance" && "bg-primary text-primary-foreground")}
       onClick={() => onToolChange(tool === "distance" ? null : "distance")}
       aria-label="Medir distância" title="Medir distância"
     >
-      <Ruler size={20} />
+      <Ruler size={18} />
     </Button>
     <Button
       size="icon" variant={tool === "area" ? "default" : "secondary"}
@@ -34,14 +35,14 @@ const MeasureToolbar = ({
       onClick={() => onToolChange(tool === "area" ? null : "area")}
       aria-label="Medir área" title="Medir área"
     >
-      <Hexagon size={20} />
+      <Hexagon size={18} />
     </Button>
     <Button
       size="icon" variant="secondary" className={btn}
       onClick={onOpenElevation} disabled={!elevationEnabled}
       aria-label="Perfil de elevação" title="Perfil de elevação"
     >
-      <Mountain size={20} />
+      <Mountain size={18} />
     </Button>
     <Button
       size="icon" variant={tool === "compass" ? "default" : "secondary"}
@@ -49,7 +50,7 @@ const MeasureToolbar = ({
       onClick={() => onToolChange(tool === "compass" ? null : "compass")}
       aria-label="Bússola" title="Bússola"
     >
-      <Compass size={20} />
+      <Compass size={18} />
     </Button>
     <Button
       size="icon" variant="secondary" className={btn}
@@ -62,7 +63,7 @@ const MeasureToolbar = ({
       size="icon" variant="secondary" className={btn}
       onClick={onClear} aria-label="Limpar tudo" title="Limpar tudo"
     >
-      <Trash2 size={18} />
+      <Trash2 size={16} />
     </Button>
   </div>
 );
