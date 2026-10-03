@@ -1,18 +1,30 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Compass } from "lucide-react";
+import { Menu, X, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo.png";
 import ThemeToggle from "./ThemeToggle";
+import { MANUAL_URL } from "@/lib/manual";
 
-const navItems = [
+interface NavItem {
+  label: string;
+  /** Internal path starting with `/`. */
+  path?: string;
+  /** External URL (https://...). When set, opens in new tab. */
+  href?: string;
+  /** Highlight this item with primary border. */
+  highlight?: boolean;
+}
+
+const navItems: NavItem[] = [
   { label: "Início", path: "/" },
   { label: "Equipamentos", path: "/equipamentos" },
   { label: "E-books", path: "/ebooks" },
   { label: "Jogos", path: "/jogos" },
   { label: "Simulador", path: "/simulador" },
   { label: "Mapa", path: "/mapa-sobrevivencia" },
-  { label: "Bússola", path: "/bussola" },
+  // Botão "Bússola" — abre o app externo Manual do Sobrevivente em nova aba
+  { label: "Bússola", href: MANUAL_URL, highlight: true },
   { label: "GIS Tático", path: "/gis" },
   { label: "Visão OSIRIS", path: "/visao-osiris", highlight: true },
   { label: "Desafios", path: "/desafios" },
@@ -20,7 +32,14 @@ const navItems = [
   { label: "Perfil", path: "/perfil" },
   { label: "Estatísticas", path: "/estatisticas" },
   { label: "Admin", path: "/admin" },
-] as const;
+];
+
+const itemClass = (item: NavItem, isActive: boolean) => {
+  const base = "px-3 py-2 rounded-md text-sm font-medium transition-colors";
+  if (isActive) return `${base} text-primary bg-primary/10`;
+  if (item.highlight) return `${base} text-primary border border-primary/40 hover:bg-primary/10`;
+  return `${base} text-muted-foreground hover:text-foreground hover:bg-muted`;
+};
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -38,21 +57,28 @@ const Navbar = () => {
 
         {/* Desktop */}
         <div className="hidden lg:flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === item.path
-                  ? "text-primary bg-primary/10"
-                  : "highlight" in item && item.highlight
-                    ? "text-primary border border-primary/40 hover:bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) =>
+            item.href ? (
+              <a
+                key={item.label}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-1 ${itemClass(item, false)}`}
+              >
+                {item.label}
+                <ExternalLink size={12} className="opacity-60" />
+              </a>
+            ) : (
+              <Link
+                key={item.label}
+                to={item.path!}
+                className={itemClass(item, location.pathname === item.path)}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -79,22 +105,30 @@ const Navbar = () => {
             className="lg:hidden bg-background border-b border-border overflow-hidden max-h-[80vh] overflow-y-auto"
           >
             <div className="px-3 sm:px-4 py-3 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setOpen(false)}
-                  className={`block px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                    location.pathname === item.path
-                      ? "text-primary bg-primary/10"
-                      : "highlight" in item && item.highlight
-                        ? "text-primary border border-primary/40 hover:bg-primary/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) =>
+                item.href ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between ${itemClass(item, false)}`}
+                  >
+                    <span>{item.label}</span>
+                    <ExternalLink size={14} className="opacity-60" />
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    to={item.path!}
+                    onClick={() => setOpen(false)}
+                    className={`block ${itemClass(item, location.pathname === item.path)}`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
             </div>
           </motion.div>
         )}

@@ -6,6 +6,7 @@ import Section from "@/components/Section";
 import ContentCard from "@/components/ContentCard";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
+import { MANUAL_URL } from "@/lib/manual";
 import { products, ebooks, games, challenges } from "@/data/mockData";
 
 const features = [
@@ -52,13 +53,16 @@ const Index = () => {
               >
                 Explorar Equipamentos
               </Link>
-              <Link
-                to="/bussola"
+              <a
+                href={MANUAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="border border-primary text-primary font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:bg-primary/10 transition-colors text-sm flex items-center gap-2"
               >
                 <Compass className="w-4 h-4" />
                 Bússola Tática
-              </Link>
+                <ExternalLink className="w-3 h-3 opacity-60" />
+              </a>
               <Link
                 to="/simulador"
                 className="border border-border text-foreground font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:bg-muted transition-colors text-sm"
