@@ -1,81 +1,23 @@
-# Iteração 3 — Waypoints Táticos e Import/Export GPX/KML
+# Iteração 4 do GIS Tático: rotas, S.O.S./B.O.B. e mapas offline
 
-Expande o módulo `/gis` com waypoints categorizados, rotas persistentes e interoperabilidade com apps de campo (Garmin, Google Earth, OsmAnd, Gaia GPS).
+## O que você vai ganhar
+1. **Resumo da rota para baixar**: cada rota salva ganha um botão "Baixar resumo", em PDF ou HTML. O resumo traz o nome, a data, o mapa da rota, a lista de pontos com coordenadas (DD/MGRS), a distância de cada trecho e o total, a subida e a descida, o gráfico de elevação e o tempo estimado.
+2. **Medir trilhas com um painel na tela**: escolha uma rota ou uma sequência de pontos e veja a distância total, a subida e a descida, e o tempo estimado (regra de Naismith ajustada ao ritmo escolhido). Durante a navegação, um painel no mapa mostra quanto falta, o próximo ponto, a direção e a hora estimada de chegada, usando sua posição real.
+3. **Editar rotas**: reordene os pontos arrastando, mova-os no mapa, insira um ponto entre dois outros, remova ou duplique pontos, e duplique a rota inteira. O mapa se atualiza na hora e tudo fica salvo.
+4. **Mapas offline por área**: desenhe um retângulo no mapa para escolher a região, em vez de usar só a área visível. Antes de baixar, você vê a estimativa de quantidade e tamanho. Durante o download, aparecem o progresso, os botões de pausar e cancelar e a contagem de falhas, com opção de tentar de novo. Também dá para ver o espaço usado por região e no total, apagar uma região ou limpar todo o cache.
+5. **Módulo S.O.S. e B.O.B.** (painel novo no mapa):
+   - **B.O.B. (mochila de emergência)**: várias listas, cada uma com itens, peso, quantidade, categoria e validade, além de anotações livres. Mostra o peso total e marca os itens já embalados.
+   - **S.O.S.**: um modo de emergência em tela cheia com sinal sonoro de SOS em Morse (som gerado no próprio app), lanterna estroboscópica na tela, sua posição em DD/MGRS em letras grandes, e botões para compartilhar a posição por SMS ou WhatsApp com contatos salvos. Inclui anotações de emergência, como tipo sanguíneo e alergias.
+   - **Atalhos configuráveis**: escolha uma tecla de teclado (padrão: Shift+S), toque triplo no botão S.O.S. ou toque longo de 2 segundos. Isso é ajustado nas configurações do módulo.
 
-## Escopo
-
-### 1. Waypoints com tipos e ícones táticos
-- Estender `Waypoint` em `src/data/mapTypes.ts` com `type: WaypointType` e `icon` opcional.
-- Tipos: `base`, `agua`, `perigo`, `abrigo`, `recurso`, `observacao`, `rota`, `extracao`, `contato`, `generico`.
-- Cada tipo tem ícone Lucide + cor semântica (forest/earth/tactical/primary/destructive).
-- Novo `src/data/waypointTypes.ts` centraliza config (ícone, cor, label PT-BR, emoji fallback).
-
-### 2. UI de Waypoints no mapa
-- Novo `src/components/gis/WaypointLayer.tsx`: renderiza `L.marker` com `divIcon` estilizado por tipo. Clique seleciona (integra com `CompassHUD` alvo já existente).
-- Novo `src/components/gis/WaypointDialog.tsx`: modal shadcn para criar/editar waypoint (nome, tipo, cor, nota, lat/lng editáveis com validação).
-- Long-press no mapa (mobile) e Shift+click (desktop) abrem o dialog pré-preenchido com a coordenada clicada. Handler em `MapaTatico.tsx`.
-- Botão "Adicionar waypoint" na toolbar lateral (ao lado de `LocateButton`).
-
-### 3. Painel lateral de gerenciamento
-- Novo `src/components/gis/WaypointsPanel.tsx`: `Sheet` (side="right") listando todos os waypoints.
-- Busca por nome, filtro por tipo (chips), ordenação (recente/nome/distância do usuário).
-- Cada item: ícone tipado, nome, coord (formato preferido), ações (voar até, editar, remover). Virtualização com `react-window` já disponível (ou fallback simples se >200 itens).
-- Botão "Limpar todos" com confirmação.
-
-### 4. Rotas (paths persistentes)
-- Nova entidade `Route` em `mapTypes.ts`: `{ id, name, color, points: LatLng[], createdAt, notes? }`.
-- Novo `src/hooks/useRoutes.ts` (padrão `useWaypoints`, storage `sh_routes`).
-- Botão "Salvar como rota" no card de distância existente (`DistanceTool.tsx`) — converte o path atual em `Route` persistente.
-- Rotas listadas em aba do `WaypointsPanel` (tabs: Waypoints / Rotas). Ao clicar, desenha polyline no mapa e permite exportar.
-
-### 5. Import/Export GPX e KML
-- Novo `src/lib/gpx.ts`: parser + serializador GPX 1.1 (waypoints `<wpt>` e tracks `<trk>/<trkseg>/<trkpt>`).
-- Novo `src/lib/kml.ts`: parser + serializador KML (Placemarks com `<Point>` e `<LineString>`; extensões de cor via `<Style>`).
-- Sem libs externas — parsing via `DOMParser`, serialização via template strings + `XMLSerializer` para escape.
-- Novo `src/components/gis/ImportExportMenu.tsx`: dropdown com:
-  - **Exportar waypoints** (GPX / KML) — download via Blob.
-  - **Exportar rotas** (GPX / KML).
-  - **Exportar tudo**.
-  - **Importar arquivo** (`<input type="file" accept=".gpx,.kml">`) — detecta formato pela extensão + validação de root element; mescla com dados existentes (dedupe por lat/lng+nome, toast de resumo).
-- Todos os textos e mensagens de erro em PT-BR.
-
-### 6. Ajustes de integração
-- `CompassHUD` continua aceitando waypoint selecionado como alvo — expor `selectedWaypointId` em `MapaTatico.tsx` compartilhado com `WaypointLayer` e `WaypointsPanel`.
-- `LayerSwitcher` e `MeasureToolbar` continuam funcionando sem regressão.
-- Todos os textos em PT-BR.
-
-## Arquivos
-
-```text
-Novos:
-  src/data/waypointTypes.ts
-  src/components/gis/WaypointLayer.tsx
-  src/components/gis/WaypointDialog.tsx
-  src/components/gis/WaypointsPanel.tsx
-  src/components/gis/ImportExportMenu.tsx
-  src/hooks/useRoutes.ts
-  src/lib/gpx.ts
-  src/lib/kml.ts
-
-Editados:
-  src/data/mapTypes.ts               +type/icon em Waypoint, +Route
-  src/hooks/useWaypoints.ts          suporte a novos campos + updateWaypoint
-  src/components/gis/MapaTatico.tsx  integra layer, panel, dialog, menu
-  src/components/gis/DistanceTool.tsx  botão "salvar como rota"
-```
+Tudo funciona sem internet e fica salvo no próprio aparelho, como no resto do GIS.
 
 ## Detalhes técnicos
-
-- **Formato GPX**: schema oficial `http://www.topografix.com/GPX/1/1`. Cor via extensão `<extensions><gpxx:DisplayColor>`. Compatível com Garmin BaseCamp.
-- **Formato KML**: schema `http://www.opengis.net/kml/2.2`. Cor via `<Style><IconStyle><color>` (formato AABBGGRR).
-- **Import dedupe**: waypoints com mesma lat/lng (tol. ~1m) e mesmo nome são ignorados; conflito de ID gera novo `crypto.randomUUID()`.
-- **Migração de dados**: `useWaypoints` inicial faz backfill de `type: "generico"` para waypoints antigos sem o campo.
-
-## Fora do escopo (Iteração 4)
-- Sync com Supabase (fica quando o usuário priorizar).
-- Compartilhamento de rotas por link.
-- Snap-to-trail / routing engine.
-
-## Perguntas
-1. Prefere o painel de waypoints como **Sheet lateral** (deslizante) ou como **página dedicada** `/gis/waypoints`?
-2. Ao importar GPX/KML, devo **mesclar** com os waypoints atuais ou oferecer opção de **substituir tudo**?
+- Novas libs: `jspdf` para gerar o PDF e `@dnd-kit/sortable` para reordenar os pontos. A imagem do mapa é desenhada em canvas a partir dos tiles em cache, sem depender de captura de tela.
+- `src/lib/routeStats.ts`: distância por trecho, subida e descida (com filtro de ruído) e estimativa de tempo. A elevação vem de `elevation.ts` e fica guardada na própria rota (`elevations?: number[]`).
+- `src/lib/routeReport.ts`: monta o HTML (Blob) e o PDF (jsPDF) a partir da mesma estrutura de dados.
+- `useRoutes`: novas funções `updateRoute`, `duplicateRoute`, `reorderPoint`, `movePoint`, `insertPoint` e `removePoint`. Novo componente `RouteEditor.tsx`, com marcadores arrastáveis no mapa e lista ordenável no painel.
+- `TrailHUD.tsx`: acompanha a posição com `watchPosition`, encontra o ponto mais próximo da rota e calcula o que falta.
+- `tileCache.ts`: download em fila com pausar, retomar e cancelar (AbortController), registro das falhas, tamanho em bytes por região, `clearAll()` e uma estimativa por `navigator.storage.estimate()`. Novo componente `AreaSelectTool.tsx` para desenhar o retângulo.
+- `useBob.ts`, `useSos.ts` e `SosBobPanel.tsx`, mais `SosMode.tsx` em tela cheia. O sinal Morse fica em `sounds.ts`. Os atalhos ficam salvos em `sh_sos_shortcuts` e são lidos por um listener global no `MapaTatico`.
+- Tudo é guardado em localStorage ou IndexedDB. Nada usa servidor.
