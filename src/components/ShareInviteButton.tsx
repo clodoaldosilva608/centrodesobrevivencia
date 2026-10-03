@@ -4,7 +4,7 @@ import { Share2, X, Copy, Check, MessageCircle, Send, Globe } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const INVITE_URL = "https://centrodesobrevivencia.lovable.app";
+const INVITE_URL = "https://centrodesobrevivencia.app";
 const INVITE_TEXT = `🏕️ Descubra o SURVIVAL HUB — a plataforma definitiva para sobrevivencialismo, bushcraft e aventura!\n\n✅ Simuladores realistas de sobrevivência\n✅ Mapa interativo com GPS e pontos secretos\n✅ +50 desafios com sistema de XP e conquistas\n✅ Jogos, e-books e equipamentos avaliados\n✅ 100% gratuito!\n\nJunte-se a milhares de sobreviventes:\n${INVITE_URL}`;
 
 const shareChannels = [

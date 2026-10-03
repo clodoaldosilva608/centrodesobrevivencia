@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 
-const SITE_URL = "https://centrodesobrevivencia.lovable.app";
+const SITE_URL = "https://centrodesobrevivencia.app";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
 const OG_W = 1200;
 const OG_H = 630;

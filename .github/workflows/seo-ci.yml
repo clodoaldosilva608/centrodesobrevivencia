@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       target_url:
-        description: "Published URL to audit (defaults to centrodesobrevivencia.lovable.app)"
+        description: "Published URL to audit (defaults to https://centrodesobrevivencia.app)"
         required: false
-        default: "https://centrodesobrevivencia.lovable.app"
+        default: "https://centrodesobrevivencia.app"
 
 jobs:
   validate:
@@ -34,6 +34,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build (also regenerates sitemap via prebuild hook)
+        env:
+          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
         run: bun run build
 
       - name: Install Playwright browsers
@@ -43,6 +45,8 @@ jobs:
         id: seo
         # Continue so we can ALWAYS upload the report, then enforce below.
         continue-on-error: true
+        env:
+          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
         run: bunx tsx scripts/validate-seo.ts
 
       - name: Upload SEO validation report (HTML + JSON, per-route failures)
@@ -101,11 +105,11 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/equipamentos
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/ebooks
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/jogos
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.lovable.app' }}/bussola
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/equipamentos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/ebooks
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/jogos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/bussola
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: ./.lighthouserc.json

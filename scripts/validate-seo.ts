@@ -35,7 +35,7 @@ import { resolve } from "path";
 import { spawn, type ChildProcess } from "child_process";
 import { chromium, type Browser } from "playwright";
 
-const SITE_URL = "https://centrodesobrevivencia.lovable.app";
+const SITE_URL = process.env.SITE_URL ?? "https://centrodesobrevivencia.app";
 const LOCAL_PORT = Number(process.env.PORT ?? 4173);
 const LOCAL_BASE = `http://localhost:${LOCAL_PORT}`;
 const BASE_URL = (process.env.BASE_URL ?? LOCAL_BASE).replace(/\/$/, "");

@@ -3,7 +3,7 @@ import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { products, ebooks, games } from "../src/data/mockData";
 
-const BASE_URL = "https://centrodesobrevivencia.lovable.app";
+const BASE_URL = process.env.SITE_URL ?? "https://centrodesobrevivencia.app";
 
 interface SitemapEntry {
   path: string;
