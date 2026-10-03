@@ -275,13 +275,15 @@ export const osiris = {
     ) as Promise<SatelliteEntry[]>;
   },
 
-  /** Canais de notícias 24/7. Cache 1h. */
+  /** Canais de notícias 24/7. Cache 1h.
+   *  Shape real da API: {"feeds": [...]} — confirmado por curl em produção.
+   */
   liveNews(): Promise<LiveNewsChannel[]> {
     return withCache("live-news", 60 * 60 * 1000, () =>
       fetchJSON<
-        LiveNewsChannel[] | { channels: LiveNewsChannel[]; news?: LiveNewsChannel[] }
+        LiveNewsChannel[] | { feeds: LiveNewsChannel[]; channels?: LiveNewsChannel[]; news?: LiveNewsChannel[] }
       >("/api/live-news").then((r) =>
-        Array.isArray(r) ? r : r.channels ?? r.news ?? [],
+        Array.isArray(r) ? r : r.feeds ?? r.channels ?? r.news ?? [],
       ),
     ) as Promise<LiveNewsChannel[]>;
   },

@@ -171,7 +171,9 @@ function SingleLayer({ id, enabled, onCounts, onError }: { id: OsirisLayerId } &
     if (!layer) return;
     layer.clearLayers();
 
-    if (!enabled) {
+    // BUG anterior: `!enabled` checava o objeto inteiro (sempre truthy).
+    // Agora checamos APENAS a chave desta camada específica.
+    if (!enabled[id]) {
       onCounts?.({ [id]: 0 });
       return;
     }

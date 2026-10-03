@@ -85,6 +85,21 @@ const OsirisPanel = ({ enabled, onToggle, counts, errors, loading }: Props) => {
     };
   }, []);
 
+  // Pré-aquece as camadas mais prováveis (terremotos + conflitos) assim que o painel abre.
+  // O cache em memória evita re-fetch quando o usuário ativa de fato a camada.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    Promise.allSettled([osiris.earthquakes(), osiris.conflicts(), osiris.fires()]).then(() => {
+      if (!cancelled) {
+        // silencioso — só para pré-aquecer o cache
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const refresh = () => {
     osiris.clearCache();
     window.location.reload();

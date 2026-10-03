@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Globe, ExternalLink, Info, Loader2 } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -46,6 +45,24 @@ const VisaoOsiris = () => {
     ]),
   );
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [warmupStatus, setWarmupStatus] = useState<"warming" | "ready" | "error">("warming");
+
+  // Pré-aquece a instância OSIRIS (cold start do Vercel serverless pode demorar)
+  useEffect(() => {
+    let cancelled = false;
+    const start = Date.now();
+    osiris
+      .health()
+      .then(() => {
+        if (!cancelled) setWarmupStatus(Date.now() - start < 200 ? "ready" : "ready");
+      })
+      .catch(() => {
+        if (!cancelled) setWarmupStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const layersParam = useMemo(
     () => Array.from(layers).join(","),
@@ -120,7 +137,9 @@ const VisaoOsiris = () => {
                     Carregando globo OSIRIS…
                   </p>
                   <p className="text-[10px] text-muted-foreground/70 mt-1">
-                    Pode levar alguns segundos no primeiro acesso (cold start)
+                    {warmupStatus === "warming" && "Aquecendo servidor (cold start pode levar ~30s)"}
+                    {warmupStatus === "ready" && "Servidor pronto, renderizando o globo 3D"}
+                    {warmupStatus === "error" && "Não foi possível contactar o servidor OSIRIS"}
                   </p>
                 </div>
               </div>
@@ -131,8 +150,13 @@ const VisaoOsiris = () => {
               title="Globo OSIRIS — Centro de Sobrevivência"
               className="w-full h-full border-0"
               onLoad={() => setIframeLoaded(true)}
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+              onError={(e) => {
+                console.error("OSIRIS iframe erro:", e);
+                setIframeLoaded(true);
+              }}
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              // Sandbox mínimo: scripts + same-origin (necessário para MapLibre web workers)
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-downloads"
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
