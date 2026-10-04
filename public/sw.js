@@ -1,19 +1,27 @@
 /**
- * Service Worker — Centro de Sobrevivência
+ * Service Worker — Centro de Sobrevivência (v4)
  *
- * Estratégia (v3):
+ * BUG CORRIGIDO (v3→v4): requests de extensões Chrome (chrome-extension://)
+ * ou outros schemes não-HTTP estavam quebrando o SW porque a Cache API
+ * não suporta schemes diferentes de http/https. Quando uma extensão fazia
+ * fetch em background, o SW interceptava e tentava cache.put() — que
+ * falhava com TypeError: 'Failed to execute put on Cache: Request
+ * scheme chrome-extension is unsupported'. Esse erro vazava para a página
+ * como 'Failed to fetch', quebrando o React quando o usuário clicava
+ * em botões como Editar.
+ *
+ * Estratégia (v4):
+ *  - Ignorar requests non-http(s) schemes (chrome-extension, moz-extension,
+ *    about, blob sem URL, etc.)
  *  - Navegação (HTML): network-first com fallback para offline.html
- *  - Scripts/Styles/Images/Fonts: STALE-WHILE-REVALIDATE
- *    (serve cache rápido, mas busca atualização em background; próximo
- *    reload pega a versão nova). Evita o bug do cache-first servir
- *    bundle JS antigo para sempre.
- *  - Outros (APIs, etc.): network-first
+ *  - Scripts/Styles/Images/Fonts: STALE-WHILE-REVALIDATE (com try/catch no put)
+ *  - Outros: network-first
  *
  * IMPORTANTE: Bumpar CACHE_VERSION abaixo a cada release crítica
  * para forçar limpeza dos caches antigos via activate event.
  */
 
-const CACHE_VERSION = "v3-2026-10-04";
+const CACHE_VERSION = "v4-2026-10-04-chrome-ext-fix";
 const CACHE_NAME = `survival-hub-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -48,8 +56,53 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/**
+ * Helper: verificar se a request é "cacheable" (apenas http/https).
+ * Requests de extensões (chrome-extension://, moz-extension://), blobs
+ * sem origin, etc. NÃO são suportados pela Cache API e causam erro
+ * TypeError: 'Request scheme X is unsupported'.
+ */
+function isCacheableRequest(request) {
+  // Aceitar apenas http e https schemes
+  if (request.url.startsWith("http://") || request.url.startsWith("https://")) {
+    return true;
+  }
+  // Outros schemes (chrome-extension://, moz-extension://, about:, blob:,
+  // data:, ws:, wss:, etc.) NÃO são suportados pela Cache API.
+  return false;
+}
+
+/**
+ * Helper: fazer cache.put com try/catch. Não deixa erros da Cache API
+ * vazarem para a página (causa "Failed to fetch").
+ */
+async function safeCachePut(request, response) {
+  try {
+    if (!isCacheableRequest(request)) return;
+    if (!response || !response.ok) return;
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response);
+  } catch (e) {
+    // Silencioso — erros de cache não devem quebrar o fetch da página.
+    // Comum com extensões do navegador que fazem requests em background.
+    console.warn("[sw] cache.put falhou (ignorado):", e.message?.slice(0, 80));
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+
+  // ─── FILTRO CRÍTICO: ignorar requests non-http(s) ────────────────────
+  // Extensões do Chrome (Adblock, password managers, etc.) fazem requests
+  // com scheme chrome-extension:// que a Cache API não suporta. Se
+  // deixarmos passar para o fetch handler, dá TypeError ao tentar
+  // cache.put(). Por isso, retornamos SEM interceptar esses requests —
+  // o navegador trata normalmente.
+  if (!isCacheableRequest(request)) {
+    return;
+  }
+
+  // Método não-GET também não é cacheable
   if (request.method !== "GET") return;
 
   // Para navegação (HTML), network-first com fallback offline
@@ -61,8 +114,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Para scripts/styles/images/fonts: STALE-WHILE-REVALIDATE
-  // Serve do cache imediatamente (rápido), mas busca na rede em background.
-  // No próximo reload, a versão nova já estará no cache.
   if (
     request.destination === "script" ||
     request.destination === "style" ||
@@ -70,19 +121,27 @@ self.addEventListener("fetch", (event) => {
     request.destination === "font"
   ) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        // Sempre buscar na rede em paralelo (revalidate)
-        const networkFetch = fetch(request).then((response) => {
-          if (response && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        }).catch(() => cached); // fallback para cache se offline
+      (async () => {
+        try {
+          const cached = await caches.match(request);
+          // Sempre buscar na rede em paralelo (revalidate)
+          const networkFetchPromise = fetch(request)
+            .then((response) => {
+              // Atualizar cache em background (não bloqueia response)
+              safeCachePut(request, response.clone());
+              return response;
+            })
+            .catch(() => cached); // fallback para cache se offline
 
-        // Se há cache, serve ele imediatamente e revalida em background
-        return cached || networkFetch;
-      })
+          // Se há cache, serve ele imediatamente e revalida em background
+          return cached || networkFetchPromise;
+        } catch (e) {
+          // Fallback final: tentar cache
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          throw e;
+        }
+      })()
     );
     return;
   }
