@@ -134,9 +134,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   const logout = useCallback(async () => {
+    // 1. Sign out no Supabase (invalida o token no servidor)
     await supabase.auth.signOut();
+    // 2. Limpar state local
     setUser(null);
     setSession(null);
+    // 3. Limpar TODOS os dados sensíveis do browser
+    //    - localStorage (session do Supabase, perfil do useUserProfile, etc.)
+    //    - sessionStorage (dados temporários)
+    //    Preservar apenas theme/sound settings (não-sensíveis)
+    try {
+      const keysToKeep = new Set(["sh_theme", "sh_sound_enabled", "sh_sound_volume"]);
+      const lsKeys = Object.keys(localStorage);
+      for (const key of lsKeys) {
+        if (!keysToKeep.has(key)) {
+          localStorage.removeItem(key);
+        }
+      }
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn("[auth] erro ao limpar storage:", (e as Error).message);
+    }
   }, []);
 
   return (

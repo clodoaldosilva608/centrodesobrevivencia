@@ -252,14 +252,14 @@ const Login = () => {
                 )}
 
                 {mode === "magic" && (
-                  <motion.form key="magic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleMagic} className="space-y-4">
+                  <motion.form key="magic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleMagic} className="space-y-4" autoComplete="off">
                     <div>
                       <label className="text-sm font-medium text-foreground">Nome</label>
-                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome de sobrevivente" className="mt-1" required />
+                      <Input name="magic-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome de sobrevivente" className="mt-1" required autoComplete="off" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">E-mail</label>
-                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required />
+                      <Input name="magic-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required autoComplete="off" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <Button type="submit" disabled={submitting} className="w-full h-12 font-heading tracking-wider uppercase text-sm gap-3">
                       <Mail className="w-5 h-5" />
@@ -270,14 +270,14 @@ const Login = () => {
                 )}
 
                 {mode === "password" && (
-                  <motion.form key="password" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handlePassword} className="space-y-4">
+                  <motion.form key="password" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handlePassword} className="space-y-4" autoComplete="off">
                     <div>
                       <label className="text-sm font-medium text-foreground">E-mail</label>
-                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required />
+                      <Input name="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required autoComplete="off" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">Senha</label>
-                      <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" required minLength={6} />
+                      <Input name="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" required minLength={6} autoComplete="new-password" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <Button type="submit" disabled={submitting} className="w-full h-12 font-heading tracking-wider uppercase text-sm gap-3">
                       <LogIn className="w-5 h-5" />
@@ -288,18 +288,18 @@ const Login = () => {
                 )}
 
                 {mode === "signup" && (
-                  <motion.form key="signup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleSignup} className="space-y-4">
+                  <motion.form key="signup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleSignup} className="space-y-4" autoComplete="off">
                     <div>
                       <label className="text-sm font-medium text-foreground">Nome</label>
-                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome de sobrevivente" className="mt-1" required />
+                      <Input name="signup-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome de sobrevivente" className="mt-1" required autoComplete="off" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">E-mail</label>
-                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required />
+                      <Input name="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required autoComplete="off" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">Senha</label>
-                      <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="mínimo 6 caracteres" className="mt-1" required minLength={6} />
+                      <Input name="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="mínimo 6 caracteres" className="mt-1" required minLength={6} autoComplete="new-password" spellCheck={false} data-lpignore="true" data-1p-ignore />
                     </div>
                     <Button type="submit" disabled={submitting} className="w-full h-12 font-heading tracking-wider uppercase text-sm gap-3">
                       <UserPlus className="w-5 h-5" />
