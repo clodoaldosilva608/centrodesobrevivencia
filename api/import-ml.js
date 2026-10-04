@@ -1,6 +1,3 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -11,100 +8,76 @@ module.exports = async (req, res) => {
   const inputUrl = (req.body || {}).url;
   if (!inputUrl) return res.status(400).json({ error: 'URL é obrigatória' });
 
-  let browser = null;
   try {
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    await page.setExtraHTTPHeaders({ 'Accept-Language': 'pt-BR,pt;q=0.9' });
-
-    // Resolver short URL
+    // Passo 1: Resolver short URL
     let finalUrl = inputUrl;
     if (inputUrl.includes('meli.la')) {
-      try {
-        const r = await fetch(inputUrl, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0' } });
-        if (r.status === 301 || r.status === 302) finalUrl = r.headers.get('location') || inputUrl;
-      } catch (e) {}
+      const r = await fetch(inputUrl, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } });
+      if (r.status === 301 || r.status === 302) finalUrl = r.headers.get('location') || inputUrl;
     }
 
-    // Abrir página
-    await page.goto(finalUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-    
-    // Scroll para carregar todos os produtos
-    let prevCount = 0;
-    for (let i = 0; i < 30; i++) {
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-      await new Promise(r => setTimeout(r, 1500));
-      const count = await page.evaluate(() => document.querySelectorAll('img[alt]').length);
-      console.log('Scroll ' + (i+1) + ': ' + count + ' imagens');
-      if (count === prevCount && i > 2) break;
-      prevCount = count;
-    }
-
-    // Voltar ao topo
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise(r => setTimeout(r, 500));
-
-    // Extrair produtos
-    const products = await page.evaluate(() => {
-      const skipAlts = ['logo', 'streaming', 'banner', 'icone', 'navigation', 'footer', 'mercado', 'categoria', 'avatar', 'search', 'perfil', 'oferta'];
-      const results = [];
-      const seen = new Set();
-      
-      const links = Array.from(document.querySelectorAll('a[href*="/p/MLB"]'));
-      
-      for (const link of links) {
-        const href = link.getAttribute('href') || '';
-        const img = link.querySelector('img');
-        const alt = (img && img.getAttribute('alt')) || '';
-        const src = (img && (img.getAttribute('src') || img.getAttribute('data-src'))) || '';
-        
-        if (alt.length < 5) continue;
-        if (skipAlts.some(s => alt.toLowerCase().includes(s))) continue;
-        
-        const title = alt.replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
-        const slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
-        
-        if (seen.has(slug)) continue;
-        seen.add(slug);
-        
-        results.push({ title, price: '', image: src, url: href.split('?')[0], buyLink: href, affiliateNetwork: 'mercadolivre', slug });
-      }
-      
-      if (results.length === 0) {
-        const imgs = Array.from(document.querySelectorAll('img[alt]'));
-        for (const img of imgs) {
-          const alt = img.getAttribute('alt') || '';
-          const src = img.getAttribute('src') || '';
-          if (alt.length < 5) continue;
-          if (skipAlts.some(s => alt.toLowerCase().includes(s))) continue;
-          if (!src.includes('mlstatic.com')) continue;
-          
-          const title = alt.replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
-          const slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
-          if (seen.has(slug)) continue;
-          seen.add(slug);
-          
-          results.push({ title, price: '', image: src, url: '', buyLink: '', affiliateNetwork: 'mercadolivre', slug });
-        }
-      }
-      
-      return results;
+    // Passo 2: Buscar HTML
+    const pageRes = await fetch(finalUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8',
+      },
     });
+    const html = await pageRes.text();
 
-    // Categorizar
-    const categorized = products.map(p => ({ ...p, category: guessCategory(p.title) }));
+    // Passo 3: Extrair produtos do HTML
+    const skipAlts = ['logo', 'streaming', 'banner', 'icone', 'navigation', 'footer', 'mercado', 'categoria', 'avatar', 'search', 'perfil', 'oferta'];
+    const products = [];
+    const seen = new Set();
 
-    return res.status(200).json({ success: true, sourceUrl: finalUrl, productsCount: categorized.length, products: categorized });
+    // Método: img com alt + src mlstatic
+    const imgRegex = /<img[^>]*\s+alt="([^"]*)"[^>]*\s+src="(https?:\/\/http2\.mlstatic\.com\/[^"]*)"[^>]*\/?>/gi;
+    const imgRegex2 = /<img[^>]*\s+src="(https?:\/\/http2\.mlstatic\.com\/[^"]*)"[^>]*\s+alt="([^"]*)"[^>]*\/?>/gi;
+
+    // Buscar hrefs para produtos
+    const hrefRegex = /href="(https?:\/\/www\.mercadolivre\.com\.br\/[^"]*\/p\/MLB\d+[^"]*)"/gi;
+    const hrefs = [];
+    let m;
+    while ((m = hrefRegex.exec(html)) !== null) {
+      hrefs.push(m[1].split('#')[0].split('?')[0]);
+    }
+
+    const allImgs = [];
+    while ((m = imgRegex.exec(html)) !== null) allImgs.push({ alt: m[1], src: m[2] });
+    while ((m = imgRegex2.exec(html)) !== null) allImgs.push({ alt: m[2], src: m[1] });
+
+    const maxLen = Math.max(allImgs.length, hrefs.length);
+    for (let i = 0; i < maxLen; i++) {
+      const img = allImgs[i];
+      if (!img) continue;
+      const alt = (img.alt || '').trim();
+      const src = img.src || '';
+      if (alt.length < 5) continue;
+      if (skipAlts.some(s => alt.toLowerCase().includes(s))) continue;
+
+      const title = alt.replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+      const slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+
+      const href = hrefs[i] || '';
+      const mlbMatch = href.match(/MLB(\d+)/);
+      const mlbId = mlbMatch ? 'MLB' + mlbMatch[1] : '';
+
+      products.push({
+        title, price: '', image: src,
+        url: href || (mlbId ? 'https://www.mercadolivre.com.br/p/' + mlbId : ''),
+        buyLink: href || finalUrl,
+        affiliateNetwork: 'mercadolivre',
+        category: guessCategory(title),
+        mlbId, slug,
+      });
+    }
+
+    return res.status(200).json({ success: true, sourceUrl: finalUrl, productsCount: products.length, products });
   } catch (error) {
-    return res.status(500).json({ error: 'Erro ao importar produtos', detail: error.message });
-  } finally {
-    if (browser) await browser.close();
+    return res.status(500).json({ error: 'Erro ao importar', detail: error.message });
   }
 };
 
