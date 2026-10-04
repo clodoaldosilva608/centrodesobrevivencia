@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isSoundEnabled, setSoundEnabled, getSoundVolume, setSoundVolume, playDiscoverSound } from "@/lib/sounds";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
@@ -39,6 +39,13 @@ const Perfil = () => {
   const [nameInput, setNameInput] = useState(profile.name);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const [volume, setVolume] = useState(getSoundVolume);
+
+  // Quando o profile.name muda (ex.: após sync com Supabase),
+  // atualizar o input. Sem este useEffect, o useState só pega o valor inicial
+  // (que pode ser 'Sobrevivente' default antes do sync).
+  useEffect(() => {
+    setNameInput(profile.name);
+  }, [profile.name]);
 
   const toggleSound = (val: boolean) => {
     setSoundOn(val);
