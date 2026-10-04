@@ -832,7 +832,6 @@ const LojaTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
       const slug = productEditing.slug || slugify(productEditing.name);
       if (!productEditing.name || !slug) throw new Error("Nome é obrigatório");
       await catalog.upsertProduct({
-        ...(productEditing._id ? { id: productEditing._id } : {}),
         slug,
         name: productEditing.name,
         category: productEditing.category,
@@ -890,7 +889,6 @@ const LojaTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
       const slug = categoryEditing.slug || slugify(categoryEditing.name);
       if (!categoryEditing.name || !slug) throw new Error("Nome é obrigatório");
       await admin.upsertCategory({
-        ...(categoryEditing._id ? { id: categoryEditing._id } : {}),
         name: categoryEditing.name,
         slug,
         type: categoryEditing.type,
@@ -1170,7 +1168,6 @@ const ConteudoTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
       const slug = ebookEditing.slug || slugify(ebookEditing.title);
       if (!ebookEditing.title || !slug) throw new Error("Título é obrigatório");
       await catalog.upsertEbook({
-        ...(ebookEditing._id ? { id: ebookEditing._id } : {}),
         slug,
         title: ebookEditing.title,
         author: ebookEditing.author,
@@ -1224,7 +1221,6 @@ const ConteudoTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
       const slug = gameEditing.slug || slugify(gameEditing.name);
       if (!gameEditing.name || !slug) throw new Error("Nome é obrigatório");
       await catalog.upsertGame({
-        ...(gameEditing._id ? { id: gameEditing._id } : {}),
         slug,
         name: gameEditing.name,
         category: gameEditing.category,

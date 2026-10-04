@@ -226,40 +226,58 @@ export const catalog = {
   // ─── CRUD admin ─────────────────────────────────────────────────────────
 
   async upsertProduct(p: Partial<ProductsRow> & { slug: string; name: string }): Promise<ProductsRow> {
-    const { data, error } = await supabase.from("products").upsert(p).select().single();
+    // Sem onConflict:'slug', o Supabase usa PK (id UUID). Como Product.id é slug
+    // (não UUID), upsert sem onConflict tenta inserir id='' e falha com
+    // 'invalid input syntax for type uuid'.
+    const { data, error } = await supabase
+      .from("products")
+      .upsert(p, { onConflict: "slug" })
+      .select()
+      .single();
     if (error) throw error;
     memCache.delete("products");
     return data;
   },
 
-  async deleteProduct(id: string): Promise<void> {
-    const { error } = await supabase.from("products").delete().eq("id", id);
+  /** Deleta por SLUG (Product.id é o slug, não o UUID do banco). */
+  async deleteProduct(slug: string): Promise<void> {
+    const { error } = await supabase.from("products").delete().eq("slug", slug);
     if (error) throw error;
     memCache.delete("products");
   },
 
   async upsertEbook(e: Partial<EbooksRow> & { slug: string; title: string }): Promise<EbooksRow> {
-    const { data, error } = await supabase.from("ebooks").upsert(e).select().single();
+    const { data, error } = await supabase
+      .from("ebooks")
+      .upsert(e, { onConflict: "slug" })
+      .select()
+      .single();
     if (error) throw error;
     memCache.delete("ebooks");
     return data;
   },
 
-  async deleteEbook(id: string): Promise<void> {
-    const { error } = await supabase.from("ebooks").delete().eq("id", id);
+  /** Deleta por SLUG (Ebook.id é o slug, não o UUID do banco). */
+  async deleteEbook(slug: string): Promise<void> {
+    const { error } = await supabase.from("ebooks").delete().eq("slug", slug);
     if (error) throw error;
     memCache.delete("ebooks");
   },
 
   async upsertGame(g: Partial<GamesRow> & { slug: string; name: string }): Promise<GamesRow> {
-    const { data, error } = await supabase.from("games").upsert(g).select().single();
+    const { data, error } = await supabase
+      .from("games")
+      .upsert(g, { onConflict: "slug" })
+      .select()
+      .single();
     if (error) throw error;
     memCache.delete("games");
     return data;
   },
 
-  async deleteGame(id: string): Promise<void> {
-    const { error } = await supabase.from("games").delete().eq("id", id);
+  /** Deleta por SLUG (Game.id é o slug, não o UUID do banco). */
+  async deleteGame(slug: string): Promise<void> {
+    const { error } = await supabase.from("games").delete().eq("slug", slug);
     if (error) throw error;
     memCache.delete("games");
   },
