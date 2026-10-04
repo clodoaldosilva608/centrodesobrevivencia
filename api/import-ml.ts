@@ -190,7 +190,7 @@ function extractProductsFromHTML(html, baseUrl) {
         price: '',
         image: image,
         url: mlbId ? `https://www.mercadolivre.com.br/MLB-${mlbId.match(/\d+/)?.[0]}` : '',
-        buyLink: mlbId ? `https://www.mercadolivre.com.br/MLB-${mlbId.match(/\d+/)?.[0]}` : inputUrl,
+        buyLink: mlbId ? `https://www.mercadolivre.com.br/MLB-${mlbId.match(/\d+/)?.[0]}` : baseUrl,
         affiliateNetwork: 'mercadolivre',
       });
     }
