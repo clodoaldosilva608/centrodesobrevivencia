@@ -4,6 +4,9 @@
  *
  * Diferente do `catalog.ts` (anônimo), estas operações NÃO fazem cache porque
  * representam dados em tempo real (atividade, contagem de usuários, etc.).
+ *
+ * IMPORTANTE: Tratamento de erro detalhado para diagnosticar problemas
+ * de rede/CORS que levam a "Failed to fetch" no console.
  */
 
 import { supabase } from "@/lib/supabase";
@@ -14,6 +17,39 @@ import type {
   ActivityLogRow, UserAchievementsRow,
   UserChallengesRow,
 } from "@/lib/supabase-types";
+
+/**
+ * Helper para envelopar erros Supabase com contexto útil para diagnóstico.
+ * Mensagem de erro do Supabase pode ser genérica ("Failed to fetch"),
+ * então adicionamos informação sobre qual tabela/operação falhou.
+ */
+function wrapError(operation: string, tableName: string, err: unknown): Error {
+  const e = err as { message?: string; code?: string; details?: string };
+  const msg = e?.message || String(err);
+  // Erros comuns de rede/CORS têm mensagens genéricas — adicionar contexto
+  if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+    return new Error(
+      `Falha de rede ao ${operation} em "${tableName}". ` +
+      `Causa provável: service worker antigo cacheando assets, ` +
+      `ou problema de CORS/conectividade com Supabase. ` +
+      `Tente: DevTools > Application > Service Workers > Unregister, ` +
+      `depois feche todas as abas e reabra. Detalhe técnico: ${msg}`
+    );
+  }
+  // Erros de RLS (403) — geralmente "permission denied"
+  if (e?.code === "42501" || msg.includes("permission denied") || msg.includes("42501")) {
+    return new Error(
+      `Permissão negada ao ${operation} em "${tableName}". ` +
+      `Você precisa ser admin para esta operação. ` +
+      `Saia e entre novamente. Detalhe: ${msg}`
+    );
+  }
+  // Outros erros do Postgres com code específico
+  if (e?.code) {
+    return new Error(`Erro ${e.code} ao ${operation} em "${tableName}": ${msg}`);
+  }
+  return new Error(`Erro ao ${operation} em "${tableName}": ${msg}`);
+}
 
 // ─── Users ─────────────────────────────────────────────────────────────────
 
@@ -58,7 +94,7 @@ export const admin = {
     }
 
     const { data, error, count } = await q;
-    if (error) throw error;
+    if (error) throw wrapError("listar", "profiles", error);
 
     // Para cada user, buscar contagens (waypoints, routes, achievements)
     const enriched: AdminUserList[] = [];
@@ -69,6 +105,11 @@ export const admin = {
         supabase.from("user_achievements").select("id", { count: "exact", head: true }).eq("user_id", u.id),
         supabase.from("user_challenges").select("id", { count: "exact", head: true }).eq("user_id", u.id),
       ]);
+      // Verificar erros individualmente (não bloquear a lista inteira por um falha)
+      if (wp.error) console.warn("[admin] listUsers:waypoints", wp.error.message);
+      if (rt.error) console.warn("[admin] listUsers:routes", rt.error.message);
+      if (ac.error) console.warn("[admin] listUsers:user_achievements", ac.error.message);
+      if (ch.error) console.warn("[admin] listUsers:user_challenges", ch.error.message);
       enriched.push({
         ...u,
         waypoints_count: wp.count ?? 0,
@@ -83,7 +124,7 @@ export const admin = {
 
   async updateUser(id: string, patch: ProfilesUpdate): Promise<ProfilesRow> {
     const { data, error } = await supabase.from("profiles").update(patch).eq("id", id).select().single();
-    if (error) throw error;
+    if (error) throw wrapError("atualizar", "profiles", error);
     return data;
   },
 
@@ -93,14 +134,14 @@ export const admin = {
     // silenciosamente mantendo OLD.is_admin. Por isso precisamos verificar o
     // valor real no banco após o update para dar feedback correto ao usuário.)
     const { error } = await supabase.from("profiles").update({ is_admin: isAdmin }).eq("id", id);
-    if (error) throw error;
+    if (error) throw wrapError("toggleAdmin", "profiles", error);
     // Verificar o valor real no banco (trigger pode ter revertido)
     const { data: updated, error: e2 } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", id)
       .single();
-    if (e2) throw e2;
+    if (e2) throw wrapError("toggleAdmin:ler_apos_update", "profiles", e2);
     const currentIsAdmin = updated?.is_admin ?? false;
     return {
       applied: currentIsAdmin === isAdmin,
@@ -111,55 +152,55 @@ export const admin = {
   async adjustXP(id: string, deltaXP: number): Promise<void> {
     // Primeiro lê o XP atual
     const { data: u, error: e1 } = await supabase.from("profiles").select("xp").eq("id", id).single();
-    if (e1) throw e1;
+    if (e1) throw wrapError("adjustXP:ler", "profiles", e1);
     const newXP = Math.max(0, (u.xp ?? 0) + deltaXP);
     const { error: e2 } = await supabase.from("profiles").update({ xp: newXP }).eq("id", id);
-    if (e2) throw e2;
+    if (e2) throw wrapError("adjustXP:atualizar", "profiles", e2);
   },
 
   async deleteUser(id: string): Promise<void> {
     // Deleta o profile; trigger CASCADE remove waypoints, routes, etc.
     // auth.users entry permanece (apenas admin pode remover via Admin API).
     const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (error) throw error;
+    if (error) throw wrapError("excluir", "profiles", error);
   },
 
   // ─── Categories ──────────────────────────────────────────────────────────
 
   async listCategories(): Promise<CategoriesRow[]> {
     const { data, error } = await supabase.from("categories").select("*").order("type, name", { ascending: true });
-    if (error) throw error;
+    if (error) throw wrapError("listar", "categories", error);
     return data ?? [];
   },
 
   async upsertCategory(c: CategoriesInsert): Promise<CategoriesRow> {
     const { data, error } = await supabase.from("categories").upsert(c, { onConflict: "slug" }).select().single();
-    if (error) throw error;
+    if (error) throw wrapError("salvar", "categories", error);
     return data;
   },
 
   async deleteCategory(id: string): Promise<void> {
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) throw error;
+    if (error) throw wrapError("excluir", "categories", error);
   },
 
   // ─── Achievements ────────────────────────────────────────────────────────
 
   async listAchievements(): Promise<AchievementsRow[]> {
     const { data, error } = await supabase.from("achievements").select("*").order("xp_reward", { ascending: false });
-    if (error) throw error;
+    if (error) throw wrapError("listar", "achievements", error);
     return data ?? [];
   },
 
   async upsertAchievement(a: AchievementsInsert): Promise<AchievementsRow> {
     const { data, error } = await supabase.from("achievements").upsert(a, { onConflict: "code" }).select().single();
-    if (error) throw error;
+    if (error) throw wrapError("salvar", "achievements", error);
     return data;
   },
 
   async deleteAchievement(id: string): Promise<void> {
     const { error } = await supabase.from("achievements").delete().eq("id", id);
-    if (error) throw error;
+    if (error) throw wrapError("excluir", "achievements", error);
   },
 
   // ─── User Achievements (conquistas desbloqueadas) ─────────────────────────
@@ -170,7 +211,7 @@ export const admin = {
       .select("*, achievement:achievements(*)")
       .eq("user_id", userId)
       .order("unlocked_at", { ascending: false });
-    if (error) throw error;
+    if (error) throw wrapError("listar", "user_achievements", error);
     return (data ?? []) as (UserAchievementsRow & { achievement?: AchievementsRow })[];
   },
 
@@ -179,7 +220,9 @@ export const admin = {
       user_id: userId,
       achievement_id: achievementId,
     });
-    if (error && !error.message.includes("duplicate")) throw error;
+    if (error && !error.message.includes("duplicate")) {
+      throw wrapError("conceder", "user_achievements", error);
+    }
   },
 
   async revokeAchievement(userId: string, achievementId: string): Promise<void> {
@@ -188,7 +231,7 @@ export const admin = {
       .delete()
       .eq("user_id", userId)
       .eq("achievement_id", achievementId);
-    if (error) throw error;
+    if (error) throw wrapError("revogar", "user_achievements", error);
   },
 
   // ─── Activity Log ─────────────────────────────────────────────────────────
@@ -209,7 +252,7 @@ export const admin = {
     if (opts.type) q = q.eq("activity_type", opts.type);
 
     const { data, error, count } = await q;
-    if (error) throw error;
+    if (error) throw wrapError("listar", "activity_log", error);
     return { data: data ?? [], total: count ?? 0 };
   },
 
