@@ -406,6 +406,7 @@ const Admin = () => {
 
 const UsuariosTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AdminUserList[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -471,8 +472,24 @@ const UsuariosTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
 
   const handleToggleAdmin = async (u: AdminUserList) => {
     try {
-      await admin.toggleAdmin(u.id, !u.is_admin);
-      toast({ title: u.is_admin ? "Removido admin" : "Promovido a admin" });
+      const result = await admin.toggleAdmin(u.id, !u.is_admin);
+      // A trigger BEFORE protect_is_admin pode ter bloqueado a mudança
+      // (auto-demotion ou demotion por não-admin). Dar feedback correto.
+      if (result.applied) {
+        toast({
+          title: u.is_admin ? "Removido admin" : "Promovido a admin",
+          description: u.is_admin ? `${u.full_name ?? u.email} não é mais admin.` : `${u.full_name ?? u.email} agora é admin.`,
+        });
+      } else {
+        // Operação foi bloqueada pela trigger
+        toast({
+          title: "Operação bloqueada",
+          description: u.is_admin
+            ? "Não é possível remover admin de si mesmo. Peça a outro admin para fazer isso."
+            : "Você não tem permissão para promover usuários.",
+          variant: "destructive",
+        });
+      }
       reload(search);
       onDataChanged();
     } catch (err) {
@@ -559,8 +576,14 @@ const UsuariosTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
                   size="icon"
                   variant="ghost"
                   onClick={() => handleToggleAdmin(u)}
+                  // Não pode rebaixar a si mesmo (trigger bloqueia silenciosamente)
+                  disabled={u.is_admin && currentUser?.id === u.id}
                   aria-label={u.is_admin ? "Rebaixar admin" : "Promover a admin"}
-                  title={u.is_admin ? "Rebaixer admin" : "Promover a admin"}
+                  title={
+                    u.is_admin && currentUser?.id === u.id
+                      ? "Não é possível rebaixar a si mesmo"
+                      : u.is_admin ? "Rebaixar admin" : "Promover a admin"
+                  }
                 >
                   {u.is_admin ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                 </Button>
@@ -568,7 +591,10 @@ const UsuariosTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
                   size="icon"
                   variant="ghost"
                   onClick={() => handleDelete(u)}
+                  // Não pode excluir a si mesmo
+                  disabled={currentUser?.id === u.id}
                   aria-label="Excluir"
+                  title={currentUser?.id === u.id ? "Não é possível excluir a si mesmo" : "Excluir"}
                 >
                   <Trash2 size={16} />
                 </Button>

@@ -87,9 +87,25 @@ export const admin = {
     return data;
   },
 
-  async toggleAdmin(id: string, isAdmin: boolean): Promise<void> {
+  async toggleAdmin(id: string, isAdmin: boolean): Promise<{ applied: boolean; currentIsAdmin: boolean }> {
+    // Retorna info sobre se a mudança foi realmente aplicada (a trigger BEFORE
+    // protect_is_admin pode bloquear auto-demotion ou demotion por não-admin,
+    // silenciosamente mantendo OLD.is_admin. Por isso precisamos verificar o
+    // valor real no banco após o update para dar feedback correto ao usuário.)
     const { error } = await supabase.from("profiles").update({ is_admin: isAdmin }).eq("id", id);
     if (error) throw error;
+    // Verificar o valor real no banco (trigger pode ter revertido)
+    const { data: updated, error: e2 } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", id)
+      .single();
+    if (e2) throw e2;
+    const currentIsAdmin = updated?.is_admin ?? false;
+    return {
+      applied: currentIsAdmin === isAdmin,
+      currentIsAdmin,
+    };
   },
 
   async adjustXP(id: string, deltaXP: number): Promise<void> {
