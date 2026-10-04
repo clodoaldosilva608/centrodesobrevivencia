@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAchievementNotification } from "@/contexts/AchievementNotifContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export interface Achievement {
   id: string;
@@ -61,6 +63,7 @@ const DEFAULT_PROFILE: UserProfile = {
 const STORAGE_KEY = "sh_user_profile";
 
 export function useUserProfile() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -78,6 +81,37 @@ export function useUserProfile() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
   }, [profile]);
+
+  // Carregar perfil do Supabase quando o user estiver autenticado
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: dbProfile, error } = await supabase
+          .from("profiles")
+          .select("xp, level, streak_days")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (error) {
+          console.warn("[useUserProfile] load from DB:", error.message);
+          return;
+        }
+        if (cancelled || !dbProfile) return;
+        setProfile((prev) => ({
+          ...prev,
+          // Override local com dados do banco (que é source-of-truth)
+          name: user.name || prev.name,
+          avatar: user.avatar || prev.avatar,
+          xp: dbProfile.xp ?? prev.xp,
+          level: dbProfile.level ?? prev.level,
+        }));
+      } catch (e) {
+        console.warn("[useUserProfile] DB sync failed:", (e as Error).message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.name, user?.avatar]);
 
   const notifyNew = useCallback((prev: Achievement[], next: Achievement[]) => {
     const newOnes = next.filter((a) => !prev.find((p) => p.id === a.id));
@@ -104,9 +138,31 @@ export function useUserProfile() {
       }
 
       notifyNew(prev.achievements, newAchievements);
+      // Persistir XP no Supabase se logado
+      if (user?.id) {
+        supabase
+          .from("profiles")
+          .update({ xp: newXP, level: newLevel })
+          .eq("id", user.id)
+          .then(({ error }) => {
+            if (error) console.warn("[useUserProfile] addXP DB:", error.message);
+          });
+        // Log de atividade
+        if (amount > 0) {
+          supabase
+            .from("activity_log")
+            .insert({
+              user_id: user.id,
+              activity_type: "xp_gain",
+              description: `+${amount} XP`,
+              xp_awarded: amount,
+            })
+            .then(() => {});
+        }
+      }
       return { ...prev, xp: newXP, level: newLevel, achievements: newAchievements };
     });
-  }, [notifyNew]);
+  }, [notifyNew, user?.id]);
 
   const completeChallenge = useCallback(() => {
     setProfile((prev) => {
@@ -148,7 +204,19 @@ export function useUserProfile() {
 
   const updateName = useCallback((name: string) => {
     setProfile((prev) => ({ ...prev, name }));
-  }, []);
+    // Persistir no Supabase se o user estiver logado
+    if (user?.id) {
+      supabase
+        .from("profiles")
+        .update({ full_name: name, username: name })
+        .eq("id", user.id)
+        .then(({ error }) => {
+          if (error) {
+            console.warn("[useUserProfile] updateName DB:", error.message);
+          }
+        });
+    }
+  }, [user?.id]);
 
   const checkMapAchievements = useCallback((discoveredCount: number, totalPoints: number, waterDiscovered: number, totalWater: number, dangerDiscovered: number, totalDanger: number) => {
     setProfile((prev) => {
