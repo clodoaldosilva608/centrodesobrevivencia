@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Compass, Flame, Mountain, Shield, Globe, ExternalLink } from "lucide-react";
@@ -7,7 +8,8 @@ import ContentCard from "@/components/ContentCard";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { MANUAL_URL } from "@/lib/manual";
-import { products, ebooks, games, challenges } from "@/data/mockData";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 const features = [
   { icon: Shield, label: "Equipamentos", desc: "Gear tático e ferramentas essenciais" },
@@ -16,7 +18,47 @@ const features = [
   { icon: Compass, label: "Exploração", desc: "Mapa e desafios semanais" },
 ];
 
+interface HomeProduct {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: string;
+  image: string;
+  buyLink: string;
+}
+
 const Index = () => {
+  const [products, setProducts] = useState<HomeProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("slug, name, category, description, price, image, buy_link")
+          .order("featured", { ascending: false })
+          .order("name", { ascending: true })
+          .limit(6);
+        if (error) throw error;
+        setProducts((data ?? []).map((r: any) => ({
+          id: r.slug,
+          name: r.name,
+          category: r.category ?? "",
+          description: r.description ?? "",
+          price: r.price ?? "",
+          image: r.image ?? "",
+          buyLink: r.buy_link ?? "",
+        })));
+      } catch (e) {
+        console.error("Erro ao carregar produtos:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   return (
     <Layout>
       <SEO
@@ -130,22 +172,30 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Equipamentos */}
-      <Section title="Equipamentos" subtitle="Gear essencial para qualquer aventura">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.slice(0, 3).map((p) => (
-            <ContentCard
-              key={p.id}
-              image={p.image}
-              title={p.name}
-              description={p.description}
-              link={`/equipamentos/${p.id}`}
-              buttonLabel="Ver Produto"
-              badge={p.category}
-              price={p.price}
-            />
-          ))}
-        </div>
+      {/* Equipamentos — produtos reais do Supabase */}
+      <Section title="Equipamentos de Sobrevivência" subtitle="Gear essencial para qualquer aventura">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : products.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">Nenhum produto disponível no momento.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((p) => (
+              <ContentCard
+                key={p.id}
+                image={p.image}
+                title={p.name}
+                description={p.description}
+                link={`/equipamentos/${p.id}`}
+                buttonLabel="Ver Produto"
+                badge={p.category}
+                price={p.price}
+              />
+            ))}
+          </div>
+        )}
         <div className="text-center mt-8">
           <Link to="/equipamentos" className="text-primary hover:underline text-sm font-semibold">
             Ver todos os equipamentos →
@@ -156,71 +206,67 @@ const Index = () => {
       {/* E-books */}
       <Section title="E-books" subtitle="Conhecimento que salva vidas" className="bg-card/50">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-          {ebooks.map((e) => (
-            <motion.div
-              key={e.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              className="group"
-            >
-              <Link to={`/ebooks/${e.id}`}>
-                <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border">
-                  <img src={e.image} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          {[
+            { title: "Manual de Sobrevivência na Selva", author: "Carlos Mendes", image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=560&fit=crop" },
+            { title: "Bushcraft para Iniciantes", author: "Ana Ribeiro", image: "https://images.unsplash.com/photo-1532011926-7a6d2eb8e0bc?w=400&h=560&fit=crop" },
+            { title: "Guia de Acampamento Selvagem", author: "Pedro Alves", image: "https://images.unsplash.com/photo-1512820790802-1b5b6c9e3e3a?w=400&h=560&fit=crop" },
+            { title: "Encontrando Água na Natureza", author: "Marcos Silva", image: "https://images.unsplash.com/photo-1551652171-ee1a0211e9d5?w=400&h=560&fit=crop" },
+            { title: "Primeiros Socorros em Situações Extremas", author: "Dra. Juliana Costa", image: "https://images.unsplash.com/photo-1584030629-9a1ad0d8d8e9?w=400&h=560&fit=crop" },
+          ].map((e, i) => (
+            <Link key={i} to="/ebooks" className="group block">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="relative overflow-hidden rounded-lg border border-border group-hover:border-primary/50 transition-colors"
+              >
+                <img src={e.image} alt={e.title} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent flex flex-col justify-end p-3">
+                  <p className="text-sm font-medium text-foreground line-clamp-2">{e.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{e.author}</p>
                 </div>
-                <h3 className="mt-3 font-heading text-sm text-foreground tracking-wide line-clamp-2">{e.title}</h3>
-                <p className="text-xs text-muted-foreground">{e.author}</p>
-              </Link>
-            </motion.div>
+              </motion.div>
+            </Link>
           ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link to="/ebooks" className="text-primary hover:underline text-sm font-semibold">
+            Ver todos os e-books →
+          </Link>
         </div>
       </Section>
 
       {/* Jogos */}
-      <Section title="Jogos Interativos" subtitle="Teste suas habilidades de sobrevivência">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {games.map((g) => (
-            <ContentCard
-              key={g.id}
-              image={g.image}
-              title={g.name}
-              description={g.description}
-              link={`/jogos/${g.id}`}
-              buttonLabel="Jogar"
-            />
+      <Section title="Jogos de Sobrevivência" subtitle="Aprenda jogando">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+          {[
+            { name: "Simulador de Floresta", image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=300&fit=crop" },
+            { name: "Construa seu Abrigo", image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400&h=300&fit=crop" },
+            { name: "Gerenciamento de Recursos", image: "https://images.unsplash.com/photo-1551652855-d9d3d8e3e0e6?w=400&h=300&fit=crop" },
+            { name: "Exploração de Território", image: "https://images.unsplash.com/photo-1502920917128-1aa6c8e8e8e6?w=400&h=300&fit=crop" },
+            { name: "Caça e Coleta", image: "https://images.unsplash.com/photo-1547038963-2d4d6e3a4e0e?w=400&h=300&fit=crop" },
+          ].map((g, i) => (
+            <Link key={i} to="/jogos" className="group block">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="relative overflow-hidden rounded-lg border border-border group-hover:border-primary/50 transition-colors"
+              >
+                <img src={g.image} alt={g.name} className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end p-3">
+                  <p className="text-sm font-medium text-foreground">{g.name}</p>
+                </div>
+              </motion.div>
+            </Link>
           ))}
         </div>
-      </Section>
-
-      {/* Desafios */}
-      <Section title="Desafios da Semana" subtitle="Conquiste XP e suba de nível" className="bg-card/50">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {challenges.map((c, i) => (
-            <motion.div
-              key={c.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-gradient-card rounded-lg border border-border p-5"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  c.difficulty === "Extremo" ? "bg-destructive/30 text-destructive" :
-                  c.difficulty === "Difícil" ? "bg-destructive/20 text-destructive" :
-                  c.difficulty === "Médio" ? "bg-primary/20 text-primary" :
-                  "bg-accent/30 text-accent-foreground"
-                }`}>
-                  {c.difficulty}
-                </span>
-                <span className="text-primary font-heading text-sm">+{c.xp} XP</span>
-              </div>
-              <h3 className="font-heading text-foreground tracking-wide">{c.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{c.description}</p>
-              <p className="mt-3 text-xs text-muted-foreground">Prazo: {c.deadline}</p>
-            </motion.div>
-          ))}
+        <div className="text-center mt-8">
+          <Link to="/jogos" className="text-primary hover:underline text-sm font-semibold">
+            Ver todos os jogos →
+          </Link>
         </div>
       </Section>
     </Layout>

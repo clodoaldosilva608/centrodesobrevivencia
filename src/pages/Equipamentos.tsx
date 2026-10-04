@@ -1,17 +1,68 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import Section from "@/components/Section";
 import CategoryFilter from "@/components/CategoryFilter";
 import EquipmentCard from "@/components/EquipmentCard";
-import { products } from "@/data/mockData";
-import { Package, Search } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Package, Search, Loader2 } from "lucide-react";
 import SEO from "@/components/SEO";
 
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  fullDescription: string;
+  price: string;
+  image: string;
+  specs: string[];
+  benefits: string[];
+  buyLink: string;
+  affiliateNetwork?: string | null;
+  inStock?: boolean;
+  featured?: boolean;
+}
+
 const Equipamentos = () => {
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))], []);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState("Todos");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .order("featured", { ascending: false })
+          .order("name", { ascending: true });
+        if (error) throw error;
+        setProducts((data ?? []).map((r: any) => ({
+          id: r.slug,
+          name: r.name,
+          category: r.category ?? "",
+          description: r.description ?? "",
+          fullDescription: r.full_description ?? "",
+          price: r.price ?? "",
+          image: r.image ?? "",
+          specs: Array.isArray(r.specs) ? r.specs : [],
+          benefits: Array.isArray(r.benefits) ? r.benefits : [],
+          buyLink: r.buy_link ?? "",
+          affiliateNetwork: r.affiliate_network,
+          inStock: r.in_stock,
+          featured: r.featured,
+        })));
+      } catch (e) {
+        console.error("Erro ao carregar produtos:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
 
   const filtered = useMemo(() => {
     let result = selected === "Todos" ? products : products.filter((p) => p.category === selected);
@@ -25,7 +76,7 @@ const Equipamentos = () => {
       );
     }
     return result;
-  }, [selected, search]);
+  }, [products, selected, search]);
 
   return (
     <Layout>
@@ -54,29 +105,42 @@ const Equipamentos = () => {
         {/* Results count */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <Package size={14} />
-          <span>
-            {filtered.length} {filtered.length === 1 ? "produto encontrado" : "produtos encontrados"}
-          </span>
+          {loading ? (
+            <span>Carregando produtos...</span>
+          ) : (
+            <span>
+              {filtered.length} {filtered.length === 1 ? "produto encontrado" : "produtos encontrados"}
+            </span>
+          )}
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
-          {filtered.map((p) => (
-            <EquipmentCard key={p.id} {...p} />
-          ))}
-        </div>
+        {/* Loading */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            {/* Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+              {filtered.map((p) => (
+                <EquipmentCard key={p.id} {...p} />
+              ))}
+            </div>
 
-        {filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-            <Package size={48} className="mx-auto text-muted-foreground/40 mb-4" />
-            <p className="text-muted-foreground">Nenhum produto encontrado.</p>
-            <button
-              onClick={() => { setSelected("Todos"); setSearch(""); }}
-              className="mt-3 text-primary text-sm hover:underline"
-            >
-              Limpar filtros
-            </button>
-          </motion.div>
+            {filtered.length === 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+                <Package size={48} className="mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-muted-foreground">Nenhum produto encontrado.</p>
+                <button
+                  onClick={() => { setSelected("Todos"); setSearch(""); }}
+                  className="mt-3 text-primary text-sm hover:underline"
+                >
+                  Limpar filtros
+                </button>
+              </motion.div>
+            )}
+          </>
         )}
       </Section>
     </Layout>
