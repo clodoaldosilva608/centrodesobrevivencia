@@ -1,2004 +1,3320 @@
 /**
- * Admin.tsx — Painel administrativo expandido (5 abas).
+ * Admin.tsx — Painel administrativo completo.
  *
- * Estrutura:
- *   1. Usuários     — gestão de usuários (perfil, admin, XP, conquistas)
- *   2. Loja         — produtos + categorias
- *   3. Conteúdo     — e-books + jogos
- *   4. Gamificação  — desafios + conquistas
- *   5. Sistema      — dashboard de estatísticas + log de atividade
+ * Layout:
+ *   ┌─────────────────────────────────────────────────────┐
+ *   │ [logo] PAINEL ADMIN | user@email  [Ver site] [Sair] │   top bar (h-14)
+ *   ├──────────┬──────────────────────────────────────────┤
+ *   │ 👥 Users │                                          │
+ *   │ 📦 Prods │            CONTENT AREA                  │
+ *   │ 📚 Ebooks│            (scrollable)                  │
+ *   │ 🎮 Games │                                          │
+ *   │ 🏆 Chall │                                          │
+ *   │ ⭐ Achiev│                                          │
+ *   │ 📁 Categ │                                          │
+ *   │ 📊 Stats │                                          │
+ *   └──────────┘                                          │
+ *      sidebar (w-14 mobile / w-48 desktop)
  *
- * Cada aba é um componente independente (próprio estado, próprios diálogos)
- * para evitar re-render global ao trocar de aba.
+ * Cada seção é um componente independente com próprio estado,
+ * dialogs e handlers. Todas as operações Supabase são diretas
+ * (sem wrappers em catalog.ts / admin-catalog.ts).
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Package, BookOpen, Gamepad2, Trophy, Pencil, Trash2, Plus, Search,
-  X, AlertCircle, Loader2, Database, RefreshCw, Users, ShoppingBag,
-  Book, Award, Activity, Shield, ChevronUp, ChevronDown, Eye, Zap,
-  ExternalLink, User, LogOut,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import SEO from "@/components/SEO";
-import catalog from "@/lib/catalog";
-import admin from "@/lib/admin-catalog";
-import type { Product, Ebook, Game, Challenge } from "@/lib/catalog";
-import type { AdminUserList } from "@/lib/admin-catalog";
-import type { CategoriesRow, AchievementsRow, ActivityLogRow } from "@/lib/supabase-types";
-import { products as mockProducts, ebooks as mockEbooks, games as mockGames, challenges as mockChallenges } from "@/data/mockData";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Users,
+  Package,
+  BookOpen,
+  Gamepad2,
+  Trophy,
+  Star,
+  FolderTree,
+  BarChart3,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
+  ExternalLink,
+  LogOut,
+  X,
+} from "lucide-react";
 
-// ─── Tipos ──────────────────────────────────────────────────────────────────
+// ─── Tipos ───────────────────────────────────────────────────────────────────
 
-type Tab = "usuarios" | "loja" | "conteudo" | "gamificacao" | "sistema";
+type SectionKey =
+  | "users"
+  | "products"
+  | "ebooks"
+  | "games"
+  | "challenges"
+  | "achievements"
+  | "categories"
+  | "system";
 
-type CategoryType = "product" | "ebook" | "game" | "challenge";
 type Difficulty = "Fácil" | "Médio" | "Difícil" | "Extremo";
+type CategoryType = "product" | "ebook" | "game" | "challenge";
+
+interface UserRow {
+  id: string;
+  full_name: string | null;
+  username: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  xp: number;
+  level: number;
+  is_admin: boolean;
+  created_at: string;
+}
+
+interface UserFormState {
+  id: string;
+  full_name: string;
+  username: string;
+  is_admin: boolean;
+  xp: number;
+}
+
+interface ProductRow {
+  id: string;
+  slug: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  full_description: string | null;
+  benefits: string[] | null;
+  price: string | null;
+  image: string | null;
+  specs: string[] | null;
+  buy_link: string | null;
+  affiliate_network: string | null;
+  rating: number;
+  in_stock: boolean;
+  featured: boolean;
+  sort_order: number;
+}
 
 interface ProductFormState {
-  _id?: string;
-  name: string; slug: string; category: string;
-  description: string; fullDescription: string;
-  price: string; image: string; specs: string; benefits: string;
-  buyLink: string; affiliateNetwork: string;
-  inStock: boolean; featured: boolean;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  full_description: string;
+  price: string;
+  image: string;
+  specs: string;
+  benefits: string;
+  buy_link: string;
+  affiliate_network: string;
+  in_stock: boolean;
+  featured: boolean;
 }
-interface CategoryFormState {
-  _id?: string;
-  name: string; slug: string;
-  type: CategoryType; description: string;
+
+interface EbookRow {
+  id: string;
+  slug: string;
+  title: string;
+  author: string | null;
+  description: string | null;
+  synopsis: string | null;
+  pages: number | null;
+  category: string | null;
+  image: string | null;
+  pdf_url: string | null;
+  price: string | null;
+  is_free: boolean;
 }
+
 interface EbookFormState {
-  _id?: string;
-  title: string; slug: string; author: string;
-  description: string; synopsis: string;
-  pages: string; category: string; image: string;
-  pdfUrl: string; isFree: boolean;
+  title: string;
+  slug: string;
+  author: string;
+  description: string;
+  synopsis: string;
+  pages: string;
+  category: string;
+  image: string;
+  pdf_url: string;
+  is_free: boolean;
 }
+
+interface GameRow {
+  id: string;
+  slug: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  mechanic: string | null;
+  objective: string | null;
+  image: string | null;
+  is_active: boolean;
+}
+
 interface GameFormState {
-  _id?: string;
-  name: string; slug: string; category: string;
-  description: string; mechanic: string; objective: string;
-  image: string; isActive: boolean;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  mechanic: string;
+  objective: string;
+  image: string;
+  is_active: boolean;
 }
+
+interface ChallengeRow {
+  id: string;
+  title: string;
+  description: string | null;
+  difficulty: Difficulty | null;
+  category: string | null;
+  xp: number;
+  deadline: string | null;
+  is_active: boolean;
+}
+
 interface ChallengeFormState {
-  _id?: string;
-  title: string; description: string;
-  difficulty: Difficulty; category: string;
-  xp: string; deadline: string; isActive: boolean;
+  title: string;
+  description: string;
+  difficulty: Difficulty;
+  category: string;
+  xp: string;
+  deadline: string;
+  is_active: boolean;
 }
+
+interface AchievementRow {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  xp_reward: number;
+  category: string | null;
+}
+
 interface AchievementFormState {
-  _id?: string;
-  code: string; name: string; description: string;
-  icon: string; xpReward: string; category: string;
-}
-interface UserFormState {
-  _id: string;
-  fullName: string; username: string;
-  isAdmin: boolean; xpDelta: string;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  xp_reward: string;
+  category: string;
 }
 
-// ─── Constantes ────────────────────────────────────────────────────────────
+interface CategoryRow {
+  id: string;
+  name: string;
+  slug: string;
+  type: CategoryType;
+  description: string | null;
+  created_at: string;
+}
 
-const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: "usuarios", label: "Usuários", icon: Users },
-  { key: "loja", label: "Loja", icon: ShoppingBag },
-  { key: "conteudo", label: "Conteúdo", icon: Book },
-  { key: "gamificacao", label: "Gamificação", icon: Award },
-  { key: "sistema", label: "Sistema", icon: Activity },
-];
+interface CategoryFormState {
+  name: string;
+  slug: string;
+  type: CategoryType;
+  description: string;
+}
 
-const slugify = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+interface ActivityLogRow {
+  id: string;
+  user_id: string;
+  activity_type: string;
+  description: string | null;
+  xp_awarded: number;
+  metadata: unknown;
+  created_at: string;
+}
 
-const emptyProductForm: ProductFormState = {
-  name: "", slug: "", category: "", description: "", fullDescription: "",
-  price: "", image: "", specs: "", benefits: "", buyLink: "",
-  affiliateNetwork: "amazon", inStock: true, featured: false,
-};
-const emptyCategoryForm: CategoryFormState = {
-  name: "", slug: "", type: "product", description: "",
-};
-const emptyEbookForm: EbookFormState = {
-  title: "", slug: "", author: "", description: "", synopsis: "",
-  pages: "0", category: "", image: "", pdfUrl: "", isFree: true,
-};
-const emptyGameForm: GameFormState = {
-  name: "", slug: "", category: "", description: "", mechanic: "",
-  objective: "", image: "", isActive: true,
-};
-const emptyChallengeForm: ChallengeFormState = {
-  title: "", description: "", difficulty: "Médio", category: "",
-  xp: "100", deadline: "", isActive: true,
-};
-const emptyAchievementForm: AchievementFormState = {
-  code: "", name: "", description: "", icon: "🏆", xpReward: "100", category: "",
-};
-const emptyUserForm: UserFormState = {
-  _id: "", fullName: "", username: "", isAdmin: false, xpDelta: "0",
-};
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const AFFILIATE_NETWORKS = [
-  { value: "amazon", label: "Amazon Associates" },
-  { value: "mercadolivre", label: "Mercado Livre Afiliados" },
-  { value: "aliexpress", label: "AliExpress Affiliates" },
-  { value: "shopee", label: "Shopee Affiliate" },
-  { value: "magalu", label: "Magalu Lu" },
-  { value: "other", label: "Outro" },
-];
+function slugify(s: string): string {
+  return (s ?? "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
 
-// ─── Helpers de UI ─────────────────────────────────────────────────────────
+function formatDate(s: string | null | undefined): string {
+  if (!s) return "—";
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return String(s);
+  }
+}
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1">
-    <Label className="text-xs text-muted-foreground">{label}</Label>
-    {children}
-  </div>
-);
+function formatDateTime(s: string | null | undefined): string {
+  if (!s) return "—";
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return d.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(s);
+  }
+}
 
-const ErrorBanner = ({ message }: { message: string | null }) => {
-  if (!message) return null;
+function toDatetimeLocal(s: string | null | undefined): string {
+  if (!s) return "";
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
+function splitLines(s: string): string[] {
+  return (s ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+}
+
+function initials(name: string): string {
   return (
-    <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/40 flex items-start gap-2">
-      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-      <p className="text-sm text-foreground">{message}</p>
+    (name ?? "")
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
+
+function toInt(v: string, fallback = 0): number {
+  const n = parseInt(v, 10);
+  return isNaN(n) ? fallback : n;
+}
+
+// ─── UI primitives ───────────────────────────────────────────────────────────
+
+function Loader({ label = "Carregando..." }: { label?: string }) {
+  return (
+    <div className="flex items-center justify-center py-12 text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+      <span className="text-sm">{label}</span>
     </div>
   );
-};
-
-const LoadingState = () => (
-  <div className="flex items-center justify-center py-12">
-    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-  </div>
-);
-
-const EmptyState = ({ label }: { label: string }) => (
-  <div className="text-center py-12 text-muted-foreground text-sm">{label}</div>
-);
-
-interface ToolbarProps {
-  search: string;
-  setSearch: (s: string) => void;
-  onReload: () => void;
-  loading: boolean;
-  saving?: boolean;
-  onNew?: () => void;
-  newLabel?: string;
-  extra?: React.ReactNode;
 }
 
-const Toolbar = ({ search, setSearch, onReload, loading, saving, onNew, newLabel = "Novo", extra }: ToolbarProps) => (
-  <div className="flex flex-col sm:flex-row gap-2 mb-4">
-    <div className="relative flex-1">
-      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar…"
-        className="pl-9"
-      />
-    </div>
-    <div className="flex gap-2 flex-wrap">
-      {extra}
-      <Button variant="outline" size="sm" onClick={onReload} disabled={loading}>
-        <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
-      </Button>
-      {onNew && (
-        <Button size="sm" onClick={onNew} disabled={saving}>
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={14} />}
-          {newLabel}
+function ErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+      <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+      <div className="flex-1 text-sm leading-relaxed">{message}</div>
+      {onRetry && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRetry}
+          className="h-7 shrink-0"
+        >
+          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Repetir
         </Button>
       )}
     </div>
-  </div>
-);
-
-const initialsOf = (name: string | null | undefined): string => {
-  const s = (name ?? "").trim();
-  if (!s) return "?";
-  return s.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-};
-
-const fmtDate = (iso?: string | null): string => {
-  if (!iso) return "—";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString("pt-BR", {
-      day: "2-digit", month: "2-digit", year: "2-digit",
-      hour: "2-digit", minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-};
-
-interface RowBadge { label: string; variant?: "default" | "secondary" | "destructive" | "outline" }
-
-interface ItemRowProps {
-  title: string;
-  subtitle?: string;
-  extra?: string;
-  image?: string;
-  featured?: boolean;
-  badges?: RowBadge[];
-  onEdit: () => void;
-  onDelete: () => void;
-  extraActions?: React.ReactNode;
+  );
 }
 
-const ItemRow = ({ title, subtitle, extra, image, featured, badges = [], onEdit, onDelete, extraActions }: ItemRowProps) => (
-  <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-    {image ? (
-      <img src={image} alt="" loading="lazy" className="w-12 h-12 rounded object-cover shrink-0" />
-    ) : null}
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 flex-wrap">
-        <p className="font-medium text-foreground truncate">{title}</p>
-        {featured && <Badge variant="default" className="text-[10px]">★</Badge>}
-        {badges.map((b, i) => (
-          <Badge key={i} variant={b.variant ?? "secondary"} className="text-[10px]">{b.label}</Badge>
-        ))}
-      </div>
-      {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
-    </div>
-    {extra && <p className="text-xs text-muted-foreground hidden sm:block whitespace-nowrap">{extra}</p>}
-    <div className="flex gap-1 shrink-0">
-      {extraActions}
-      <Button size="icon" variant="ghost" onClick={onEdit} aria-label="Editar"><Pencil size={16} /></Button>
-      <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Excluir"><Trash2 size={16} /></Button>
-    </div>
-  </div>
-);
-
-// ─── Componente principal ───────────────────────────────────────────────────
-
-const Admin = () => {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>("usuarios");
-  const [counts, setCounts] = useState<Record<Tab, number>>({
-    usuarios: 0, loja: 0, conteudo: 0, gamificacao: 0, sistema: 0,
-  });
-
-  const reloadCounts = useCallback(async () => {
-    try {
-      const s = await admin.stats();
-      setCounts({
-        usuarios: s.users,
-        loja: s.products + s.categories,
-        conteudo: s.ebooks + s.games,
-        gamificacao: s.challenges + s.achievements,
-        sistema: s.activityLog,
-      });
-    } catch (err) {
-      console.warn("[admin] stats:", (err as Error).message);
-    }
-  }, []);
-
-  useEffect(() => { reloadCounts(); }, [reloadCounts]);
-
+function EmptyState({ message = "Nenhum item encontrado" }: { message?: string }) {
   return (
-    <>
-      <SEO
-        title="Painel Admin — Centro de Sobrevivência"
-        description="Painel administrativo: usuários, loja, conteúdo, gamificação e sistema."
-        noIndex
-      />
-      {/* Layout full-screen dedicado — sem Navbar/Footer da landing page */}
-      <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-hidden">
-        {/* Top bar do admin */}
-        <header className="flex items-center justify-between gap-3 px-3 sm:px-4 h-12 sm:h-14 border-b border-border bg-card/80 backdrop-blur shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Voltar ao site">
-              <img src="/icon-192.png" alt="" className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
-              <span className="font-heading text-sm sm:text-base tracking-wider text-foreground hidden sm:block">
-                PAINEL ADMIN
-              </span>
-            </Link>
-            <span className="text-muted-foreground/50 mx-1 hidden sm:inline">/</span>
-            <span className="text-xs text-muted-foreground truncate">
-              {user?.name}
-              {user?.isAdmin && (
-                <Badge variant="default" className="ml-2 gap-1 text-[10px] h-4 px-1">
-                  <Shield size={8} /> Admin
-                </Badge>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 text-xs"
-            >
-              <Link to="/" target="_blank" rel="noopener noreferrer">
-                <ExternalLink size={12} /> Ver site
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 text-xs"
-            >
-              <Link to="/perfil">
-                <User size={12} /> Perfil
-              </Link>
-            </Button>
-            <Button
-              onClick={async () => {
-                if (confirm("Sair da conta admin?")) {
-                  await logout();
-                  window.location.href = "/";
-                }
-              }}
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 text-xs text-destructive hover:text-destructive"
-            >
-              <LogOut size={12} /> Sair
-            </Button>
-          </div>
-        </header>
-
-        {/* Body: sidebar + content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar (lateral em desktop, top bar em mobile) */}
-          <aside className="w-14 sm:w-56 lg:w-64 shrink-0 border-r border-border bg-card/50 overflow-y-auto">
-            <nav className="flex sm:flex-col gap-1 p-2">
-              {tabs.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors shrink-0 ${
-                    activeTab === t.key
-                      ? "bg-primary/15 text-primary border-l-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent"
-                  }`}
-                  title={t.label}
-                >
-                  <t.icon size={16} className="shrink-0" />
-                  <span className="hidden sm:inline truncate">{t.label}</span>
-                  <span className="hidden sm:inline-block ml-auto text-xs bg-muted px-1.5 py-0.5 rounded-full shrink-0">
-                    {counts[t.key]}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </aside>
-
-          {/* Content area — scrolla */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="p-3 sm:p-4 lg:p-6 max-w-6xl mx-auto">
-              {activeTab === "usuarios" && <UsuariosTab onDataChanged={reloadCounts} />}
-              {activeTab === "loja" && <LojaTab onDataChanged={reloadCounts} />}
-              {activeTab === "conteudo" && <ConteudoTab onDataChanged={reloadCounts} />}
-              {activeTab === "gamificacao" && <GamificacaoTab onDataChanged={reloadCounts} />}
-              {activeTab === "sistema" && <SistemaTab onDataChanged={reloadCounts} />}
-            </div>
-          </main>
-        </div>
-      </div>
-    </>
+    <div className="text-center py-12 text-muted-foreground text-sm">
+      {message}
+    </div>
   );
+}
+
+function SectionHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mb-4">
+      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      {description && (
+        <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+      )}
+    </div>
+  );
+}
+
+function Toolbar({
+  search,
+  setSearch,
+  onRefresh,
+  onCreate,
+  placeholder,
+  createLabel,
+}: {
+  search: string;
+  setSearch: (v: string) => void;
+  onRefresh: () => void;
+  onCreate: () => void;
+  placeholder: string;
+  createLabel: string;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between mb-4">
+      <div className="relative w-full sm:max-w-xs">
+        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={placeholder}
+          className="pl-9 h-9"
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          className="h-9"
+          title="Recarregar"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="sr-only">Recarregar</span>
+        </Button>
+        <Button size="sm" onClick={onCreate} className="h-9">
+          <Plus className="h-3.5 w-3.5 mr-1" /> {createLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDelete({
+  open,
+  onClose,
+  onConfirm,
+  message,
+  busy,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  message: string;
+  busy: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" /> Confirmar exclusão
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">{message}</p>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Cancelar
+          </Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Excluir
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+  full,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+  full?: boolean;
+}) {
+  return (
+    <div className={`space-y-1.5 ${full ? "sm:col-span-2" : ""}`}>
+      <Label className="text-xs font-medium">{label}</Label>
+      {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function NativeSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function SwitchField({
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border p-3">
+      <div className="pr-3">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  );
+}
+
+function ThumbImage({ src, alt, size = 40 }: { src: string | null; alt: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  if (!src || failed) {
+    return (
+      <div
+        className="rounded-md bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium shrink-0"
+        style={{ width: size, height: size }}
+      >
+        {initials(alt).slice(0, 1) || "•"}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="rounded-md object-cover shrink-0 border"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+function AvatarThumb({ src, name }: { src: string | null; name: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  if (!src || failed) {
+    return (
+      <div
+        className="rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0"
+        style={{ width: 32, height: 32 }}
+      >
+        {initials(name)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="rounded-full object-cover shrink-0 border"
+      style={{ width: 32, height: 32 }}
+    />
+  );
+}
+
+function TableShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">{children}</table>
+      </div>
+    </div>
+  );
+}
+
+function Th({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <th
+      className={`text-left font-medium text-xs uppercase text-muted-foreground tracking-wide px-3 py-2.5 ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <td className={`px-3 py-2.5 align-middle ${className}`}>{children}</td>;
+}
+
+function RowActions({
+  onEdit,
+  onDelete,
+  editDisabled,
+  deleteDisabled,
+  editTitle,
+  deleteTitle,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  editDisabled?: boolean;
+  deleteDisabled?: boolean;
+  editTitle?: string;
+  deleteTitle?: string;
+}) {
+  return (
+    <div className="flex gap-1 justify-end">
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        onClick={onEdit}
+        disabled={editDisabled}
+        title={editTitle ?? "Editar"}
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        <span className="sr-only">Editar</span>
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+        onClick={onDelete}
+        disabled={deleteDisabled}
+        title={deleteTitle ?? "Excluir"}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        <span className="sr-only">Excluir</span>
+      </Button>
+    </div>
+  );
+}
+
+// ─── Difficulty / status badges ─────────────────────────────────────────────
+
+function DifficultyBadge({ d }: { d: Difficulty | null }) {
+  if (!d) return <span className="text-muted-foreground">—</span>;
+  const styles: Record<Difficulty, string> = {
+    "Fácil": "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+    "Médio": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
+    "Difícil": "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
+    "Extremo": "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[d]}`}>
+      {d}
+    </span>
+  );
+}
+
+function CategoryTypeBadge({ t }: { t: CategoryType }) {
+  const map: Record<CategoryType, { label: string; cls: string }> = {
+    product: { label: "Produto", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
+    ebook: { label: "E-book", cls: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200" },
+    game: { label: "Jogo", cls: "bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200" },
+    challenge: { label: "Desafio", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
+  };
+  const cfg = map[t];
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function NetworkBadge({ n }: { n: string | null }) {
+  if (!n) return <span className="text-muted-foreground">—</span>;
+  return <Badge variant="outline" className="text-[10px] uppercase">{n}</Badge>;
+}
+
+// ─── 1. Usuários ────────────────────────────────────────────────────────────
+
+const emptyUserForm: UserFormState = {
+  id: "",
+  full_name: "",
+  username: "",
+  is_admin: false,
+  xp: 0,
 };
 
-// ─── Aba 1: Usuários ────────────────────────────────────────────────────────
-
-/**
- * Aba Usuários — lista paginada de usuários (profiles) com:
- *  - Busca por email/nome/username (via admin.listUsers)
- *  - Editar perfil (nome, username, is_admin, ajustar XP)
- *  - Promover/Rebaixer admin (toggle rápido)
- *  - Ver conquistas do usuário (conceder / revogar)
- *  - Excluir usuário (com confirmação)
- */
-
-const UsuariosTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
-  const { toast } = useToast();
-  const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<AdminUserList[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+function UsersSection({
+  onCountsChanged,
+  currentUserId,
+}: {
+  onCountsChanged?: () => void;
+  currentUserId?: string;
+}) {
+  const [items, setItems] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<UserFormState>(emptyUserForm);
+  const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [achUser, setAchUser] = useState<AdminUserList | null>(null);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [form, setForm] = useState<UserFormState>(emptyUserForm);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const reload = useCallback(async (searchStr: string) => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await admin.listUsers({ page: 1, perPage: 100, search: searchStr });
-      setUsers(data);
-    } catch (err) {
-      setError((err as Error).message);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, email, avatar_url, xp, level, is_admin, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`Erro ao listar usuários: ${error.message}`);
+      setItems((data ?? []) as UserRow[]);
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => reload(search), 350);
-    return () => clearTimeout(t);
-  }, [search, reload]);
+    load();
+  }, [load]);
 
-  const openEdit = (u: AdminUserList) => {
-    setEditing({
-      _id: u.id,
-      fullName: u.full_name ?? "",
+  const filtered = items.filter((u) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (u.full_name ?? "").toLowerCase().includes(q) ||
+      (u.username ?? "").toLowerCase().includes(q) ||
+      (u.email ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openEdit = (u: UserRow) => {
+    setEditing(u);
+    setForm({
+      id: u.id,
+      full_name: u.full_name ?? "",
       username: u.username ?? "",
-      isAdmin: u.is_admin,
-      xpDelta: "0",
+      is_admin: u.is_admin,
+      xp: u.xp ?? 0,
     });
-    setError(null);
     setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyUserForm);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
     try {
-      await admin.updateUser(editing._id, {
-        full_name: editing.fullName || null,
-        username: editing.username || null,
-        is_admin: editing.isAdmin,
-      });
-      const delta = parseInt(editing.xpDelta) || 0;
-      if (delta !== 0) {
-        await admin.adjustXP(editing._id, delta);
-      }
-      toast({ title: "Usuário atualizado!" });
-      setDialogOpen(false);
-      reload(search);
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: form.full_name.trim() || null,
+          username: form.username.trim() || null,
+          is_admin: form.is_admin,
+          xp: Number(form.xp) || 0,
+        })
+        .eq("id", form.id);
+      if (error) throw new Error(`Erro ao salvar usuário: ${error.message}`);
+      toast.success("Usuário atualizado com sucesso");
+      closeDialog();
+      await load();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleToggleAdmin = async (u: AdminUserList) => {
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
     try {
-      const result = await admin.toggleAdmin(u.id, !u.is_admin);
-      // A trigger BEFORE protect_is_admin pode ter bloqueado a mudança
-      // (auto-demotion ou demotion por não-admin). Dar feedback correto.
-      if (result.applied) {
-        toast({
-          title: u.is_admin ? "Removido admin" : "Promovido a admin",
-          description: u.is_admin ? `${u.full_name ?? u.email} não é mais admin.` : `${u.full_name ?? u.email} agora é admin.`,
-        });
-      } else {
-        // Operação foi bloqueada pela trigger
-        toast({
-          title: "Operação bloqueada",
-          description: u.is_admin
-            ? "Não é possível remover admin de si mesmo. Peça a outro admin para fazer isso."
-            : "Você não tem permissão para promover usuários.",
-          variant: "destructive",
-        });
-      }
-      reload(search);
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  const handleDelete = async (u: AdminUserList) => {
-    if (!confirm(`Excluir usuário "${u.full_name ?? u.email ?? u.id}"?\nIsso remove waypoints, rotas, conquistas e desafios associados.`)) return;
-    try {
-      await admin.deleteUser(u.id);
-      toast({ title: "Usuário excluído" });
-      reload(search);
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
+      // Primeiro exclui o profile; auth.users deve ser excluído via admin SQL/edge function
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", confirmDelete.id);
+      if (error) throw new Error(`Erro ao excluir usuário: ${error.message}`);
+      toast.success("Usuário excluído");
+      setConfirmDelete(null);
+      await load();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
     }
   };
 
   return (
     <div>
+      <SectionHeader
+        title="Usuários"
+        description="Gerencie contas, permissões de admin e XP dos usuários."
+      />
       <Toolbar
         search={search}
         setSearch={setSearch}
-        onReload={() => reload(search)}
-        loading={loading}
+        onRefresh={load}
+        onCreate={() => {
+          toast.info("Criação de usuários é feita pelo fluxo de cadastro do app");
+        }}
+        placeholder="Buscar por nome, username, e-mail..."
+        createLabel="Convidar"
       />
-      <ErrorBanner message={error} />
-
-      {loading ? <LoadingState /> : users.length === 0 ? (
-        <EmptyState label="Nenhum usuário encontrado." />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando usuários..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
       ) : (
-        <div className="space-y-2">
-          {users.map((u) => (
-            <div
-              key={u.id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors"
-            >
-              {u.avatar_url ? (
-                <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
-                  {initialsOf(u.full_name ?? u.username)}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-foreground truncate">
-                    {u.full_name ?? u.username ?? u.email ?? "Sem nome"}
-                  </p>
-                  {u.is_admin && (
-                    <Badge variant="default" className="text-[10px] gap-1">
-                      <Shield size={10} /> Admin
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {u.email ?? "—"} · Lvl {u.level} · {u.xp} XP ·
-                  WP {u.waypoints_count ?? 0} / RT {u.routes_count ?? 0} / AC {u.achievements_count ?? 0}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Último acesso: {u.last_active_date ?? "—"}
-                </p>
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setAchUser(u)}
-                  aria-label="Ver conquistas"
-                  title="Ver conquistas"
-                >
-                  <Trophy size={16} />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => openEdit(u)}
-                  aria-label="Editar"
-                >
-                  <Pencil size={16} />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleToggleAdmin(u)}
-                  // Não pode rebaixar a si mesmo (trigger bloqueia silenciosamente)
-                  disabled={u.is_admin && currentUser?.id === u.id}
-                  aria-label={u.is_admin ? "Rebaixar admin" : "Promover a admin"}
-                  title={
-                    u.is_admin && currentUser?.id === u.id
-                      ? "Não é possível rebaixar a si mesmo"
-                      : u.is_admin ? "Rebaixar admin" : "Promover a admin"
-                  }
-                >
-                  {u.is_admin ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleDelete(u)}
-                  // Não pode excluir a si mesmo
-                  disabled={currentUser?.id === u.id}
-                  aria-label="Excluir"
-                  title={currentUser?.id === u.id ? "Não é possível excluir a si mesmo" : "Excluir"}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Usuário</Th>
+              <Th>E-mail</Th>
+              <Th>Admin</Th>
+              <Th className="text-right">XP</Th>
+              <Th className="text-right">Nível</Th>
+              <Th>Criado em</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((u) => {
+              const isSelf = currentUserId === u.id;
+              const name = u.full_name || u.username || "—";
+              return (
+                <tr key={u.id} className="border-t hover:bg-muted/20">
+                  <Td>
+                    <div className="flex items-center gap-2">
+                      <AvatarThumb src={u.avatar_url} name={name} />
+                      <div className="min-w-0">
+                        <div className="font-medium truncate max-w-[180px]">{name}</div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          @{u.username ?? "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </Td>
+                  <Td className="text-muted-foreground">{u.email ?? "—"}</Td>
+                  <Td>
+                    {u.is_admin ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200 hover:bg-emerald-100">
+                        Admin
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </Td>
+                  <Td className="text-right font-mono">{u.xp ?? 0}</Td>
+                  <Td className="text-right font-mono">{u.level ?? 0}</Td>
+                  <Td className="text-muted-foreground">{formatDate(u.created_at)}</Td>
+                  <Td>
+                    <RowActions
+                      onEdit={() => openEdit(u)}
+                      onDelete={() => setConfirmDelete(u)}
+                      deleteDisabled={isSelf}
+                      editDisabled={false}
+                      deleteTitle={isSelf ? "Não é possível excluir sua própria conta" : "Excluir"}
+                    />
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </TableShell>
       )}
 
-      {/* Diálogo editar usuário */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar usuário</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Field label="Nome completo">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+            <Field label="Nome completo" full>
               <Input
-                value={editing.fullName}
-                onChange={(e) => setEditing({ ...editing, fullName: e.target.value })}
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                placeholder="Ex.: João da Silva"
               />
             </Field>
             <Field label="Username">
               <Input
-                value={editing.username}
-                onChange={(e) => setEditing({ ...editing, username: e.target.value })}
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder="joaosilva"
               />
             </Field>
-            <label className="flex items-center gap-2">
-              <Switch
-                checked={editing.isAdmin}
-                onCheckedChange={(v) => setEditing({ ...editing, isAdmin: v })}
-              />
-              <span className="text-sm flex items-center gap-1">
-                <Shield size={12} /> Administrador
-              </span>
-            </label>
-            <Field label="Ajustar XP (delta — pode ser negativo)">
+            <Field label="XP">
               <Input
                 type="number"
-                value={editing.xpDelta}
-                onChange={(e) => setEditing({ ...editing, xpDelta: e.target.value })}
+                value={String(form.xp)}
+                onChange={(e) => setForm({ ...form, xp: toInt(e.target.value) })}
+                placeholder="0"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <SwitchField
+                label="Administrador"
+                description="Concede acesso ao painel administrativo"
+                checked={form.is_admin}
+                onChange={(v) => setForm({ ...form, is_admin: v })}
+                disabled={currentUserId === editing?.id}
+              />
+              {currentUserId === editing?.id && (
+                <p className="text-xs text-amber-600 mt-1.5">
+                  Não é possível remover o próprio privilégio de admin.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir o usuário ${confirmDelete.full_name || confirmDelete.email || confirmDelete.id}? Esta ação remove o perfil do banco. A conta de autenticação pode precisar ser removida separadamente.`
+            : ""
+        }
+      />
+    </div>
+  );
+}
+
+// ─── 2. Produtos ───────────────────────────────────────────────────────────
+
+const emptyProductForm: ProductFormState = {
+  name: "",
+  slug: "",
+  category: "",
+  description: "",
+  full_description: "",
+  price: "",
+  image: "",
+  specs: "",
+  benefits: "",
+  buy_link: "",
+  affiliate_network: "amazon",
+  in_stock: true,
+  featured: false,
+};
+
+const NETWORK_OPTIONS: { value: string; label: string }[] = [
+  { value: "amazon", label: "Amazon" },
+  { value: "mercadolivre", label: "Mercado Livre" },
+  { value: "aliexpress", label: "AliExpress" },
+  { value: "shopee", label: "Shopee" },
+  { value: "magalu", label: "Magalu" },
+  { value: "other", label: "Outro" },
+];
+
+function ProductsSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<ProductRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<ProductRow | null>(null);
+  const [form, setForm] = useState<ProductFormState>(emptyProductForm);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<ProductRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("name");
+      if (error) throw new Error(`Erro ao listar produtos: ${error.message}`);
+      setItems((data ?? []) as ProductRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Auto-slug from name
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (slugEdited) return;
+    setForm((f) => ({ ...f, slug: slugify(f.name) }));
+  }, [form.name, dialogOpen, slugEdited]);
+
+  const filtered = items.filter((p) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (p.name ?? "").toLowerCase().includes(q) ||
+      (p.slug ?? "").toLowerCase().includes(q) ||
+      (p.category ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyProductForm);
+    setSlugEdited(false);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (p: ProductRow) => {
+    setEditing(p);
+    setForm({
+      name: p.name ?? "",
+      slug: p.slug ?? "",
+      category: p.category ?? "",
+      description: p.description ?? "",
+      full_description: p.full_description ?? "",
+      price: p.price ?? "",
+      image: p.image ?? "",
+      specs: Array.isArray(p.specs) ? p.specs.join("\n") : "",
+      benefits: Array.isArray(p.benefits) ? p.benefits.join("\n") : "",
+      buy_link: p.buy_link ?? "",
+      affiliate_network: p.affiliate_network ?? "amazon",
+      in_stock: p.in_stock ?? false,
+      featured: p.featured ?? false,
+    });
+    setSlugEdited(true);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyProductForm);
+    setSlugEdited(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      toast.error("Informe o nome do produto");
+      return;
+    }
+    const slug = slugify(form.slug) || slugify(form.name);
+    if (!slug) {
+      toast.error("Slug inválido");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        slug,
+        name: form.name.trim(),
+        category: form.category.trim() || null,
+        description: form.description.trim() || null,
+        full_description: form.full_description.trim() || null,
+        price: form.price.trim() || null,
+        image: form.image.trim() || null,
+        specs: splitLines(form.specs),
+        benefits: splitLines(form.benefits),
+        buy_link: form.buy_link.trim() || null,
+        affiliate_network: form.affiliate_network || null,
+        in_stock: form.in_stock,
+        featured: form.featured,
+        sort_order: editing?.sort_order ?? 0,
+        rating: editing?.rating ?? 0,
+      };
+      const { data, error } = await supabase
+        .from("products")
+        .upsert(payload, { onConflict: "slug" })
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar produto: ${error.message}`);
+      const next = editing
+        ? items.map((p) => (p.id === (data as ProductRow).id ? (data as ProductRow) : p))
+        : [...items, data as ProductRow];
+      setItems(next);
+      toast.success(editing ? "Produto atualizado" : "Produto criado");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("slug", confirmDelete.slug);
+      if (error) throw new Error(`Erro ao excluir produto: ${error.message}`);
+      setItems(items.filter((p) => p.id !== confirmDelete.id));
+      toast.success("Produto excluído");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="Produtos"
+        description="Catálogo de equipamentos com links de afiliado."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por nome, slug, categoria..."
+        createLabel="Novo produto"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando produtos..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Imagem</Th>
+              <Th>Nome</Th>
+              <Th>Categoria</Th>
+              <Th className="text-right">Preço</Th>
+              <Th>Rede</Th>
+              <Th>Estoque</Th>
+              <Th>Destaque</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((p) => (
+              <tr key={p.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <ThumbImage src={p.image} alt={p.name} size={40} />
+                </Td>
+                <Td>
+                  <div className="font-medium truncate max-w-[220px]">{p.name}</div>
+                  <div className="text-xs text-muted-foreground truncate max-w-[220px]">
+                    /{p.slug}
+                  </div>
+                </Td>
+                <Td className="text-muted-foreground">{p.category ?? "—"}</Td>
+                <Td className="text-right font-mono">{p.price ?? "—"}</Td>
+                <Td>
+                  <NetworkBadge n={p.affiliate_network} />
+                </Td>
+                <Td>
+                  {p.in_stock ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Em estoque
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">Esgotado</Badge>
+                  )}
+                </Td>
+                <Td>
+                  {p.featured ? (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                      ★ Destaque
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(p)}
+                    onDelete={() => setConfirmDelete(p)}
+                  />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar produto" : "Novo produto"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <Field label="Nome" full>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex.: Canivete Suíço Multifuncional"
+              />
+            </Field>
+            <Field label="Slug" hint="Usado na URL (auto-gerado do nome)">
+              <Input
+                value={form.slug}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  setForm({ ...form, slug: e.target.value });
+                }}
+                placeholder="canivete-suico"
+              />
+            </Field>
+            <Field label="Categoria">
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex.: Cutelaria"
+              />
+            </Field>
+            <Field label="Preço" hint="Texto livre (ex.: R$ 89,90)">
+              <Input
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                placeholder="R$ 89,90"
+              />
+            </Field>
+            <Field label="Imagem (URL)" full>
+              <Input
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+                placeholder="https://..."
+              />
+            </Field>
+            <Field label="Descrição curta" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                placeholder="Resumo de 1-2 frases para o card"
+              />
+            </Field>
+            <Field label="Descrição completa" full>
+              <Textarea
+                value={form.full_description}
+                onChange={(e) => setForm({ ...form, full_description: e.target.value })}
+                rows={4}
+                placeholder="Texto exibido na página de detalhes"
+              />
+            </Field>
+            <Field label="Especificações (uma por linha)" full>
+              <Textarea
+                value={form.specs}
+                onChange={(e) => setForm({ ...form, specs: e.target.value })}
+                rows={4}
+                placeholder={"Comprimento: 9 cm\nPeso: 80 g\nAço inoxidável"}
+              />
+            </Field>
+            <Field label="Benefícios (um por linha)" full>
+              <Textarea
+                value={form.benefits}
+                onChange={(e) => setForm({ ...form, benefits: e.target.value })}
+                rows={4}
+                placeholder={"Compacto\nDurável\nMultiuso"}
+              />
+            </Field>
+            <Field label="Link de compra (URL)" full>
+              <Input
+                value={form.buy_link}
+                onChange={(e) => setForm({ ...form, buy_link: e.target.value })}
+                placeholder="https://..."
+              />
+            </Field>
+            <Field label="Rede de afiliados">
+              <NativeSelect
+                value={form.affiliate_network}
+                onChange={(v) => setForm({ ...form, affiliate_network: v })}
+                options={NETWORK_OPTIONS}
+              />
+            </Field>
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <SwitchField
+                label="Em estoque"
+                description="Disponível para compra"
+                checked={form.in_stock}
+                onChange={(v) => setForm({ ...form, in_stock: v })}
+              />
+              <SwitchField
+                label="Destaque"
+                description="Exibir na home e em listagens destacadas"
+                checked={form.featured}
+                onChange={(v) => setForm({ ...form, featured: v })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir "${confirmDelete.name}" (slug: ${confirmDelete.slug})? Esta ação não pode ser desfeita.`
+            : ""
+        }
+      />
+    </div>
+  );
+}
+
+// ─── 3. E-books ─────────────────────────────────────────────────────────────
+
+const emptyEbookForm: EbookFormState = {
+  title: "",
+  slug: "",
+  author: "",
+  description: "",
+  synopsis: "",
+  pages: "0",
+  category: "",
+  image: "",
+  pdf_url: "",
+  is_free: false,
+};
+
+function EbooksSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<EbookRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<EbookRow | null>(null);
+  const [form, setForm] = useState<EbookFormState>(emptyEbookForm);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<EbookRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("ebooks")
+        .select("*")
+        .order("title");
+      if (error) throw new Error(`Erro ao listar e-books: ${error.message}`);
+      setItems((data ?? []) as EbookRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (slugEdited) return;
+    setForm((f) => ({ ...f, slug: slugify(f.title) }));
+  }, [form.title, dialogOpen, slugEdited]);
+
+  const filtered = items.filter((e) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (e.title ?? "").toLowerCase().includes(q) ||
+      (e.slug ?? "").toLowerCase().includes(q) ||
+      (e.author ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyEbookForm);
+    setSlugEdited(false);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (e: EbookRow) => {
+    setEditing(e);
+    setForm({
+      title: e.title ?? "",
+      slug: e.slug ?? "",
+      author: e.author ?? "",
+      description: e.description ?? "",
+      synopsis: e.synopsis ?? "",
+      pages: e.pages != null ? String(e.pages) : "0",
+      category: e.category ?? "",
+      image: e.image ?? "",
+      pdf_url: e.pdf_url ?? "",
+      is_free: e.is_free ?? false,
+    });
+    setSlugEdited(true);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyEbookForm);
+    setSlugEdited(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) {
+      toast.error("Informe o título do e-book");
+      return;
+    }
+    const slug = slugify(form.slug) || slugify(form.title);
+    if (!slug) {
+      toast.error("Slug inválido");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        slug,
+        title: form.title.trim(),
+        author: form.author.trim() || null,
+        description: form.description.trim() || null,
+        synopsis: form.synopsis.trim() || null,
+        pages: form.pages.trim() ? toInt(form.pages) : null,
+        category: form.category.trim() || null,
+        image: form.image.trim() || null,
+        pdf_url: form.pdf_url.trim() || null,
+        is_free: form.is_free,
+      };
+      const { data, error } = await supabase
+        .from("ebooks")
+        .upsert(payload, { onConflict: "slug" })
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar e-book: ${error.message}`);
+      const next = editing
+        ? items.map((e) => (e.id === (data as EbookRow).id ? (data as EbookRow) : e))
+        : [...items, data as EbookRow];
+      setItems(next);
+      toast.success(editing ? "E-book atualizado" : "E-book criado");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("ebooks")
+        .delete()
+        .eq("slug", confirmDelete.slug);
+      if (error) throw new Error(`Erro ao excluir e-book: ${error.message}`);
+      setItems(items.filter((e) => e.id !== confirmDelete.id));
+      toast.success("E-book excluído");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="E-books"
+        description="Biblioteca de publicações e manuais digitais."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por título, slug, autor..."
+        createLabel="Novo e-book"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando e-books..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Capa</Th>
+              <Th>Título</Th>
+              <Th>Autor</Th>
+              <Th>Categoria</Th>
+              <Th className="text-right">Páginas</Th>
+              <Th>Gratuito</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((e) => (
+              <tr key={e.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <ThumbImage src={e.image} alt={e.title} size={40} />
+                </Td>
+                <Td>
+                  <div className="font-medium truncate max-w-[220px]">{e.title}</div>
+                  <div className="text-xs text-muted-foreground truncate max-w-[220px]">
+                    /{e.slug}
+                  </div>
+                </Td>
+                <Td className="text-muted-foreground">{e.author ?? "—"}</Td>
+                <Td className="text-muted-foreground">{e.category ?? "—"}</Td>
+                <Td className="text-right font-mono">{e.pages ?? "—"}</Td>
+                <Td>
+                  {e.is_free ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Gratuito
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">Pago</span>
+                  )}
+                </Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(e)}
+                    onDelete={() => setConfirmDelete(e)}
+                  />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar e-book" : "Novo e-book"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <Field label="Título" full>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Ex.: Manual de Sobrevivência Urbana"
+              />
+            </Field>
+            <Field label="Slug" hint="Usado na URL (auto-gerado do título)">
+              <Input
+                value={form.slug}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  setForm({ ...form, slug: e.target.value });
+                }}
+                placeholder="manual-sobrevivencia-urbana"
+              />
+            </Field>
+            <Field label="Autor">
+              <Input
+                value={form.author}
+                onChange={(e) => setForm({ ...form, author: e.target.value })}
+                placeholder="Ex.: João Sobrevivente"
+              />
+            </Field>
+            <Field label="Categoria">
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex.: Manual"
+              />
+            </Field>
+            <Field label="Páginas">
+              <Input
+                type="number"
+                value={form.pages}
+                onChange={(e) => setForm({ ...form, pages: e.target.value })}
+                placeholder="0"
+              />
+            </Field>
+            <Field label="Capa (URL)" full>
+              <Input
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+                placeholder="https://..."
+              />
+            </Field>
+            <Field label="PDF (URL)" full>
+              <Input
+                value={form.pdf_url}
+                onChange={(e) => setForm({ ...form, pdf_url: e.target.value })}
+                placeholder="https://..."
+              />
+            </Field>
+            <Field label="Descrição curta" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                placeholder="Resumo exibido no card"
+              />
+            </Field>
+            <Field label="Sinopse" full>
+              <Textarea
+                value={form.synopsis}
+                onChange={(e) => setForm({ ...form, synopsis: e.target.value })}
+                rows={4}
+                placeholder="Texto exibido na página de detalhes"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <SwitchField
+                label="Gratuito"
+                description="Disponibiliza o PDF para download sem custo"
+                checked={form.is_free}
+                onChange={(v) => setForm({ ...form, is_free: v })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir o e-book "${confirmDelete.title}" (slug: ${confirmDelete.slug})?`
+            : ""
+        }
+      />
+    </div>
+  );
+}
+
+// ─── 4. Jogos ───────────────────────────────────────────────────────────────
+
+const emptyGameForm: GameFormState = {
+  name: "",
+  slug: "",
+  category: "",
+  description: "",
+  mechanic: "",
+  objective: "",
+  image: "",
+  is_active: true,
+};
+
+function GamesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<GameRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<GameRow | null>(null);
+  const [form, setForm] = useState<GameFormState>(emptyGameForm);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<GameRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("games")
+        .select("*")
+        .order("name");
+      if (error) throw new Error(`Erro ao listar jogos: ${error.message}`);
+      setItems((data ?? []) as GameRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (slugEdited) return;
+    setForm((f) => ({ ...f, slug: slugify(f.name) }));
+  }, [form.name, dialogOpen, slugEdited]);
+
+  const filtered = items.filter((g) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (g.name ?? "").toLowerCase().includes(q) ||
+      (g.slug ?? "").toLowerCase().includes(q) ||
+      (g.category ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyGameForm);
+    setSlugEdited(false);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (g: GameRow) => {
+    setEditing(g);
+    setForm({
+      name: g.name ?? "",
+      slug: g.slug ?? "",
+      category: g.category ?? "",
+      description: g.description ?? "",
+      mechanic: g.mechanic ?? "",
+      objective: g.objective ?? "",
+      image: g.image ?? "",
+      is_active: g.is_active ?? false,
+    });
+    setSlugEdited(true);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyGameForm);
+    setSlugEdited(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      toast.error("Informe o nome do jogo");
+      return;
+    }
+    const slug = slugify(form.slug) || slugify(form.name);
+    if (!slug) {
+      toast.error("Slug inválido");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        slug,
+        name: form.name.trim(),
+        category: form.category.trim() || null,
+        description: form.description.trim() || null,
+        mechanic: form.mechanic.trim() || null,
+        objective: form.objective.trim() || null,
+        image: form.image.trim() || null,
+        is_active: form.is_active,
+      };
+      const { data, error } = await supabase
+        .from("games")
+        .upsert(payload, { onConflict: "slug" })
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar jogo: ${error.message}`);
+      const next = editing
+        ? items.map((g) => (g.id === (data as GameRow).id ? (data as GameRow) : g))
+        : [...items, data as GameRow];
+      setItems(next);
+      toast.success(editing ? "Jogo atualizado" : "Jogo criado");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("games")
+        .delete()
+        .eq("slug", confirmDelete.slug);
+      if (error) throw new Error(`Erro ao excluir jogo: ${error.message}`);
+      setItems(items.filter((g) => g.id !== confirmDelete.id));
+      toast.success("Jogo excluído");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="Jogos"
+        description="Jogos educativos de treinamento de sobrevivência."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por nome, slug, categoria..."
+        createLabel="Novo jogo"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando jogos..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Imagem</Th>
+              <Th>Nome</Th>
+              <Th>Categoria</Th>
+              <Th>Ativo</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((g) => (
+              <tr key={g.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <ThumbImage src={g.image} alt={g.name} size={40} />
+                </Td>
+                <Td>
+                  <div className="font-medium truncate max-w-[220px]">{g.name}</div>
+                  <div className="text-xs text-muted-foreground truncate max-w-[220px]">
+                    /{g.slug}
+                  </div>
+                </Td>
+                <Td className="text-muted-foreground">{g.category ?? "—"}</Td>
+                <Td>
+                  {g.is_active ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Ativo
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Inativo
+                    </Badge>
+                  )}
+                </Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(g)}
+                    onDelete={() => setConfirmDelete(g)}
+                  />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar jogo" : "Novo jogo"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <Field label="Nome" full>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex.: Bússola Virtual"
+              />
+            </Field>
+            <Field label="Slug" hint="Usado na URL (auto-gerado do nome)">
+              <Input
+                value={form.slug}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  setForm({ ...form, slug: e.target.value });
+                }}
+                placeholder="bussola-virtual"
+              />
+            </Field>
+            <Field label="Categoria">
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex.: Navegação"
+              />
+            </Field>
+            <Field label="Imagem (URL)" full>
+              <Input
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+                placeholder="https://..."
+              />
+            </Field>
+            <Field label="Descrição curta" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                placeholder="Resumo exibido no card"
+              />
+            </Field>
+            <Field label="Mecânica" full hint="Como o jogo funciona">
+              <Textarea
+                value={form.mechanic}
+                onChange={(e) => setForm({ ...form, mechanic: e.target.value })}
+                rows={3}
+                placeholder="O jogador interage..."
+              />
+            </Field>
+            <Field label="Objetivo" full>
+              <Textarea
+                value={form.objective}
+                onChange={(e) => setForm({ ...form, objective: e.target.value })}
+                rows={3}
+                placeholder="O que o jogador precisa alcançar"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <SwitchField
+                label="Ativo"
+                description="Exibir o jogo na lista pública"
+                checked={form.is_active}
+                onChange={(v) => setForm({ ...form, is_active: v })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir o jogo "${confirmDelete.name}" (slug: ${confirmDelete.slug})?`
+            : ""
+        }
+      />
+    </div>
+  );
+}
+
+// ─── 5. Desafios ────────────────────────────────────────────────────────────
+
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
+  { value: "Fácil", label: "Fácil" },
+  { value: "Médio", label: "Médio" },
+  { value: "Difícil", label: "Difícil" },
+  { value: "Extremo", label: "Extremo" },
+];
+
+const emptyChallengeForm: ChallengeFormState = {
+  title: "",
+  description: "",
+  difficulty: "Fácil",
+  category: "",
+  xp: "10",
+  deadline: "",
+  is_active: true,
+};
+
+function ChallengesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<ChallengeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<ChallengeRow | null>(null);
+  const [form, setForm] = useState<ChallengeFormState>(emptyChallengeForm);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<ChallengeRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("challenges")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`Erro ao listar desafios: ${error.message}`);
+      setItems((data ?? []) as ChallengeRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = items.filter((c) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (c.title ?? "").toLowerCase().includes(q) ||
+      (c.category ?? "").toLowerCase().includes(q) ||
+      (c.difficulty ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyChallengeForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (c: ChallengeRow) => {
+    setEditing(c);
+    setForm({
+      title: c.title ?? "",
+      description: c.description ?? "",
+      difficulty: c.difficulty ?? "Fácil",
+      category: c.category ?? "",
+      xp: c.xp != null ? String(c.xp) : "0",
+      deadline: toDatetimeLocal(c.deadline),
+      is_active: c.is_active ?? false,
+    });
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyChallengeForm);
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) {
+      toast.error("Informe o título do desafio");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        difficulty: form.difficulty,
+        category: form.category.trim() || null,
+        xp: toInt(form.xp, 0),
+        deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+        is_active: form.is_active,
+      };
+      if (editing) payload.id = editing.id;
+      const { data, error } = await supabase
+        .from("challenges")
+        .upsert(payload)
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar desafio: ${error.message}`);
+      const newRow = data as ChallengeRow;
+      const next = editing
+        ? items.map((c) => (c.id === newRow.id ? newRow : c))
+        : [newRow, ...items];
+      setItems(next);
+      toast.success(editing ? "Desafio atualizado" : "Desafio criado");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("challenges")
+        .delete()
+        .eq("id", confirmDelete.id);
+      if (error) throw new Error(`Erro ao excluir desafio: ${error.message}`);
+      setItems(items.filter((c) => c.id !== confirmDelete.id));
+      toast.success("Desafio excluído");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="Desafios"
+        description="Missões diárias e semanais com recompensas em XP."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por título, categoria, dificuldade..."
+        createLabel="Novo desafio"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando desafios..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Título</Th>
+              <Th>Dificuldade</Th>
+              <Th>Categoria</Th>
+              <Th className="text-right">XP</Th>
+              <Th>Prazo</Th>
+              <Th>Ativo</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((c) => (
+              <tr key={c.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <div className="font-medium truncate max-w-[240px]">{c.title}</div>
+                </Td>
+                <Td>
+                  <DifficultyBadge d={c.difficulty} />
+                </Td>
+                <Td className="text-muted-foreground">{c.category ?? "—"}</Td>
+                <Td className="text-right font-mono">{c.xp ?? 0}</Td>
+                <Td className="text-muted-foreground">{formatDateTime(c.deadline)}</Td>
+                <Td>
+                  {c.is_active ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Ativo
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Inativo
+                    </Badge>
+                  )}
+                </Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(c)}
+                    onDelete={() => setConfirmDelete(c)}
+                  />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar desafio" : "Novo desafio"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <Field label="Título" full>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Ex.: Identifique 5 plantas comestíveis"
+              />
+            </Field>
+            <Field label="Descrição" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                placeholder="Instruções do desafio"
+              />
+            </Field>
+            <Field label="Dificuldade">
+              <NativeSelect
+                value={form.difficulty}
+                onChange={(v) => setForm({ ...form, difficulty: v as Difficulty })}
+                options={DIFFICULTY_OPTIONS}
+              />
+            </Field>
+            <Field label="Categoria">
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex.: Botânica"
+              />
+            </Field>
+            <Field label="XP">
+              <Input
+                type="number"
+                value={form.xp}
+                onChange={(e) => setForm({ ...form, xp: e.target.value })}
+                placeholder="10"
+              />
+            </Field>
+            <Field label="Prazo (data e hora)">
+              <Input
+                type="datetime-local"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <SwitchField
+                label="Ativo"
+                description="Disponibiliza o desafio para os usuários"
+                checked={form.is_active}
+                onChange={(v) => setForm({ ...form, is_active: v })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir o desafio "${confirmDelete.title}"?`
+            : ""
+        }
+      />
+    </div>
+  );
+}
+
+// ─── 6. Conquistas ──────────────────────────────────────────────────────────
+
+const emptyAchievementForm: AchievementFormState = {
+  code: "",
+  name: "",
+  description: "",
+  icon: "",
+  xp_reward: "10",
+  category: "",
+};
+
+function AchievementsSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<AchievementRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<AchievementRow | null>(null);
+  const [form, setForm] = useState<AchievementFormState>(emptyAchievementForm);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<AchievementRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("achievements")
+        .select("*")
+        .order("code");
+      if (error) throw new Error(`Erro ao listar conquistas: ${error.message}`);
+      setItems((data ?? []) as AchievementRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = items.filter((a) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (a.code ?? "").toLowerCase().includes(q) ||
+      (a.name ?? "").toLowerCase().includes(q) ||
+      (a.category ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyAchievementForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (a: AchievementRow) => {
+    setEditing(a);
+    setForm({
+      code: a.code ?? "",
+      name: a.name ?? "",
+      description: a.description ?? "",
+      icon: a.icon ?? "",
+      xp_reward: a.xp_reward != null ? String(a.xp_reward) : "0",
+      category: a.category ?? "",
+    });
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyAchievementForm);
+  };
+
+  const handleSave = async () => {
+    if (!form.code.trim()) {
+      toast.error("Informe o código da conquista");
+      return;
+    }
+    if (!form.name.trim()) {
+      toast.error("Informe o nome da conquista");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        code: form.code.trim().toUpperCase(),
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        icon: form.icon.trim() || null,
+        xp_reward: toInt(form.xp_reward, 0),
+        category: form.category.trim() || null,
+      };
+      const { data, error } = await supabase
+        .from("achievements")
+        .upsert(payload, { onConflict: "code" })
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar conquista: ${error.message}`);
+      const newRow = data as AchievementRow;
+      const next = editing
+        ? items.map((a) => (a.id === newRow.id ? newRow : a))
+        : [...items, newRow];
+      setItems(next);
+      toast.success(editing ? "Conquista atualizada" : "Conquista criada");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("achievements")
+        .delete()
+        .eq("id", confirmDelete.id);
+      if (error) throw new Error(`Erro ao excluir conquista: ${error.message}`);
+      setItems(items.filter((a) => a.id !== confirmDelete.id));
+      toast.success("Conquista excluída");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="Conquistas"
+        description="Definições de medalhas e recompensas em XP."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por código, nome, categoria..."
+        createLabel="Nova conquista"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando conquistas..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Código</Th>
+              <Th>Ícone</Th>
+              <Th>Nome</Th>
+              <Th>Categoria</Th>
+              <Th className="text-right">XP</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((a) => (
+              <tr key={a.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <Badge variant="secondary" className="font-mono">{a.code}</Badge>
+                </Td>
+                <Td>
+                  <span className="text-lg" aria-hidden>
+                    {a.icon ?? "•"}
+                  </span>
+                </Td>
+                <Td>
+                  <div className="font-medium truncate max-w-[220px]">{a.name}</div>
+                  {a.description && (
+                    <div className="text-xs text-muted-foreground truncate max-w-[280px]">
+                      {a.description}
+                    </div>
+                  )}
+                </Td>
+                <Td className="text-muted-foreground">{a.category ?? "—"}</Td>
+                <Td className="text-right font-mono">{a.xp_reward ?? 0}</Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(a)}
+                    onDelete={() => setConfirmDelete(a)}
+                  />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar conquista" : "Nova conquista"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <Field label="Código" hint="Identificador único (ex.: FIRST_STEPS)">
+              <Input
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                placeholder="FIRST_STEPS"
+                className="font-mono"
+              />
+            </Field>
+            <Field label="Ícone" hint="Emoji ou nome de ícone lucide">
+              <Input
+                value={form.icon}
+                onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                placeholder="🎯"
+              />
+            </Field>
+            <Field label="Nome" full>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex.: Primeiros Passos"
+              />
+            </Field>
+            <Field label="Descrição" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                placeholder="Como o usuário desbloqueia"
+              />
+            </Field>
+            <Field label="Recompensa em XP">
+              <Input
+                type="number"
+                value={form.xp_reward}
+                onChange={(e) => setForm({ ...form, xp_reward: e.target.value })}
+                placeholder="10"
+              />
+            </Field>
+            <Field label="Categoria">
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex.: Onboarding"
               />
             </Field>
           </div>
-          {error && <div className="text-xs text-destructive">{error}</div>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo conquistas do usuário */}
-      <UserAchievementsDialog user={achUser} onClose={() => setAchUser(null)} />
-    </div>
-  );
-};
-
-/**
- * UserAchievementsDialog — mostra todas as conquistas cadastradas e quais o
- * usuário já possui. Permite conceder / revogar cada uma individualmente.
- */
-
-const UserAchievementsDialog = ({ user, onClose }: { user: AdminUserList | null; onClose: () => void }) => {
-  const { toast } = useToast();
-  const [all, setAll] = useState<AchievementsRow[]>([]);
-  const [mine, setMine] = useState<AchievementsRow[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const [allAch, userAch] = await Promise.all([
-        admin.listAchievements(),
-        admin.listUserAchievements(user.id),
-      ]);
-      setAll(allAch);
-      setMine(userAch.map((r) => r.achievement).filter(Boolean) as AchievementsRow[]);
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [user, toast]);
-
-  useEffect(() => { if (user) load(); }, [user, load]);
-
-  const has = (id: string) => mine.some((a) => a.id === id);
-
-  const toggle = async (a: AchievementsRow) => {
-    if (!user) return;
-    try {
-      if (has(a.id)) {
-        await admin.revokeAchievement(user.id, a.id);
-        setMine((prev) => prev.filter((x) => x.id !== a.id));
-        toast({ title: "Conquista revogada", description: a.name });
-      } else {
-        await admin.grantAchievement(user.id, a.id);
-        setMine((prev) => [...prev, a]);
-        toast({ title: "Conquista concedida!", description: `${a.name} (+${a.xp_reward} XP)` });
-      }
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  return (
-    <Dialog open={!!user} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Trophy size={16} /> Conquistas — {user?.full_name ?? user?.email}
-          </DialogTitle>
-        </DialogHeader>
-        {loading ? <LoadingState /> : all.length === 0 ? (
-          <EmptyState label="Nenhuma conquista cadastrada." />
-        ) : (
-          <div className="space-y-2">
-            {all.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 p-2 rounded border border-border">
-                <div className="text-2xl">{a.icon ?? "🏆"}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm flex items-center gap-2">
-                    {a.name}
-                    <Badge variant="outline" className="text-[10px]">{a.code}</Badge>
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {a.description ?? "—"} · +{a.xp_reward} XP
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant={has(a.id) ? "default" : "outline"}
-                  onClick={() => toggle(a)}
-                >
-                  {has(a.id) ? "Revogar" : "Conceder"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-// ─── Aba 2: Loja (Produtos + Categorias) ───────────────────────────────────
-
-/**
- * Aba Loja — gestão de produtos e categorias.
- * Mostra duas sub-seções na mesma tela:
- *   • Produtos    — CRUD via catalog.upsertProduct / deleteProduct
- *   • Categorias  — CRUD via admin.upsertCategory / deleteCategory
- * Botão "Importar mock data" chama catalog.upsertProduct/upsertEbook/upsertGame/
- * upsertChallenge para todos os itens do mockData, com try/catch por item.
- */
-
-const LojaTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
-  const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<CategoriesRow[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [productDialog, setProductDialog] = useState(false);
-  const [categoryDialog, setCategoryDialog] = useState(false);
-  const [productEditing, setProductEditing] = useState<ProductFormState>(emptyProductForm);
-  const [categoryEditing, setCategoryEditing] = useState<CategoryFormState>(emptyCategoryForm);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      catalog.clearCache();
-      const [p, c] = await Promise.all([
-        catalog.listProducts(),
-        admin.listCategories(),
-      ]);
-      setProducts(p);
-      setCategories(c);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { reload(); }, [reload]);
-
-  // Filtros client-side
-  const lowerSearch = search.toLowerCase();
-  const filteredProducts = products.filter((p) =>
-    `${p.name} ${p.category} ${p.affiliateNetwork ?? ""}`.toLowerCase().includes(lowerSearch)
-  );
-  const filteredCategories = categories.filter((c) =>
-    `${c.name} ${c.slug} ${c.type} ${c.description ?? ""}`.toLowerCase().includes(lowerSearch)
-  );
-
-  // Handlers de produto
-  const openEditProduct = (p: Product) => {
-    setProductEditing({
-      _id: p.id,
-      name: p.name,
-      slug: p.slug ?? p.id,
-      category: p.category,
-      description: p.description,
-      fullDescription: p.fullDescription,
-      price: p.price,
-      image: p.image,
-      specs: p.specs.join("\n"),
-      benefits: p.benefits.join("\n"),
-      buyLink: p.buyLink,
-      affiliateNetwork: p.affiliateNetwork ?? "amazon",
-      inStock: p.inStock ?? true,
-      featured: p.featured ?? false,
-    });
-    setError(null);
-    setProductDialog(true);
-  };
-
-  const handleSaveProduct = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const slug = productEditing.slug || slugify(productEditing.name);
-      if (!productEditing.name || !slug) throw new Error("Nome é obrigatório");
-      await catalog.upsertProduct({
-        slug,
-        name: productEditing.name,
-        category: productEditing.category,
-        description: productEditing.description,
-        full_description: productEditing.fullDescription,
-        benefits: productEditing.benefits.split("\n").map((s) => s.trim()).filter(Boolean),
-        price: productEditing.price,
-        image: productEditing.image,
-        specs: productEditing.specs.split("\n").map((s) => s.trim()).filter(Boolean),
-        buy_link: productEditing.buyLink,
-        affiliate_network: productEditing.affiliateNetwork,
-        in_stock: productEditing.inStock,
-        featured: productEditing.featured,
-      });
-      toast({ title: "Produto salvo!" });
-      setProductDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Confirma excluir este produto?")) return;
-    try {
-      await catalog.deleteProduct(id);
-      toast({ title: "Produto excluído" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  // Handlers de categoria
-  const openEditCategory = (c: CategoriesRow) => {
-    setCategoryEditing({
-      _id: c.id,
-      name: c.name,
-      slug: c.slug,
-      type: c.type,
-      description: c.description ?? "",
-    });
-    setError(null);
-    setCategoryDialog(true);
-  };
-
-  const handleSaveCategory = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const slug = categoryEditing.slug || slugify(categoryEditing.name);
-      if (!categoryEditing.name || !slug) throw new Error("Nome é obrigatório");
-      await admin.upsertCategory({
-        name: categoryEditing.name,
-        slug,
-        type: categoryEditing.type,
-        description: categoryEditing.description || null,
-      });
-      toast({ title: "Categoria salva!" });
-      setCategoryDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Confirma excluir esta categoria?")) return;
-    try {
-      await admin.deleteCategory(id);
-      toast({ title: "Categoria excluída" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  // Importar mock data (todos os tipos)
-  const seedFromMock = async () => {
-    if (!confirm("Importar todos os mock data (produtos, e-books, jogos, desafios)?")) return;
-    setSaving(true);
-    setError(null);
-    try {
-      let okP = 0, failP = 0, okE = 0, failE = 0, okG = 0, failG = 0, okC = 0, failC = 0;
-      for (const p of mockProducts) {
-        try {
-          await catalog.upsertProduct({
-            slug: p.id, name: p.name, category: p.category,
-            description: p.description, full_description: p.fullDescription,
-            benefits: p.benefits, price: p.price, image: p.image,
-            specs: p.specs, buy_link: p.buyLink, affiliate_network: "amazon",
-            in_stock: true,
-          });
-          okP++;
-        } catch { failP++; }
-      }
-      for (const e of mockEbooks) {
-        try {
-          await catalog.upsertEbook({
-            slug: e.id, title: e.title, author: e.author,
-            description: e.description, synopsis: e.synopsis,
-            pages: e.pages, category: e.category, image: e.image, is_free: true,
-          });
-          okE++;
-        } catch { failE++; }
-      }
-      for (const g of mockGames) {
-        try {
-          await catalog.upsertGame({
-            slug: g.id, name: g.name, category: g.category,
-            description: g.description, mechanic: g.mechanic,
-            objective: g.objective, image: g.image, is_active: true,
-          });
-          okG++;
-        } catch { failG++; }
-      }
-      for (const c of mockChallenges) {
-        try {
-          await catalog.upsertChallenge({
-            title: c.title, description: c.description,
-            difficulty: c.difficulty, category: c.category,
-            xp: c.xp, deadline: c.deadline || null, is_active: true,
-          });
-          okC++;
-        } catch { failC++; }
-      }
-      const totalOk = okP + okE + okG + okC;
-      const totalFail = failP + failE + failG + failC;
-      toast({
-        title: "Importação concluída",
-        description: `${totalOk} itens importados (${totalFail} falhas). P:${okP}/${failP} E:${okE}/${failE} G:${okG}/${failG} C:${okC}/${failC}`,
-      });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-      toast({ title: "Erro na importação", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Toolbar
-        search={search}
-        setSearch={setSearch}
-        onReload={reload}
-        loading={loading}
-        saving={saving}
-        onNew={() => { setProductEditing(emptyProductForm); setError(null); setProductDialog(true); }}
-        newLabel="Novo produto"
-        extra={
-          <Button variant="outline" size="sm" onClick={seedFromMock} disabled={saving}>
-            <Database size={14} /> Importar mock data
-          </Button>
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir a conquista "${confirmDelete.name}" (${confirmDelete.code})?`
+            : ""
         }
       />
-      <ErrorBanner message={error} />
-
-      {/* Produtos */}
-      <section>
-        <h2 className="font-heading uppercase tracking-wider text-sm mb-2 flex items-center gap-2">
-          <Package size={14} /> Produtos ({filteredProducts.length})
-        </h2>
-        {loading ? <LoadingState /> : filteredProducts.length === 0 ? (
-          <EmptyState label="Nenhum produto." />
-        ) : (
-          <div className="space-y-2">
-            {filteredProducts.map((p) => (
-              <ItemRow
-                key={p.id}
-                title={p.name}
-                subtitle={`${p.category} · ${p.affiliateNetwork ?? "—"}`}
-                extra={p.price}
-                image={p.image}
-                featured={p.featured}
-                badges={[
-                  ...(p.inStock === false ? [{ label: "Sem estoque", variant: "destructive" as const }] : []),
-                  ...(p.featured ? [{ label: "Destaque" }] : []),
-                ]}
-                onEdit={() => openEditProduct(p)}
-                onDelete={() => handleDeleteProduct(p.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Categorias */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-heading uppercase tracking-wider text-sm flex items-center gap-2">
-            <Package size={14} /> Categorias ({filteredCategories.length})
-          </h2>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => { setCategoryEditing(emptyCategoryForm); setError(null); setCategoryDialog(true); }}
-          >
-            <Plus size={14} /> Nova categoria
-          </Button>
-        </div>
-        {filteredCategories.length === 0 ? (
-          <EmptyState label="Nenhuma categoria." />
-        ) : (
-          <div className="space-y-2">
-            {filteredCategories.map((c) => (
-              <ItemRow
-                key={c.id}
-                title={c.name}
-                subtitle={`/${c.slug} · tipo: ${c.type}${c.description ? " · " + c.description : ""}`}
-                badges={[{ label: c.type, variant: "outline" as const }]}
-                onEdit={() => openEditCategory(c)}
-                onDelete={() => handleDeleteCategory(c.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Diálogo produto */}
-      <Dialog open={productDialog} onOpenChange={setProductDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{productEditing._id ? "Editar" : "Novo"} produto</DialogTitle>
-          </DialogHeader>
-          <ProductForm data={productEditing} onChange={setProductEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProductDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveProduct} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo categoria */}
-      <Dialog open={categoryDialog} onOpenChange={setCategoryDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{categoryEditing._id ? "Editar" : "Nova"} categoria</DialogTitle>
-          </DialogHeader>
-          <CategoryForm data={categoryEditing} onChange={setCategoryEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCategoryDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveCategory} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-};
-
-// ─── Aba 3: Conteúdo (E-books + Jogos) ─────────────────────────────────────
-
-/**
- * Aba Conteúdo — gestão de e-books e jogos.
- *   • E-books — CRUD via catalog.upsertEbook / deleteEbook
- *   • Jogos   — CRUD via catalog.upsertGame / deleteGame
- */
-
-const ConteudoTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
-  const { toast } = useToast();
-  const [ebooks, setEbooks] = useState<Ebook[]>([]);
-  const [games, setGames] = useState<Game[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [ebookDialog, setEbookDialog] = useState(false);
-  const [gameDialog, setGameDialog] = useState(false);
-  const [ebookEditing, setEbookEditing] = useState<EbookFormState>(emptyEbookForm);
-  const [gameEditing, setGameEditing] = useState<GameFormState>(emptyGameForm);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      catalog.clearCache();
-      const [e, g] = await Promise.all([
-        catalog.listEbooks(),
-        catalog.listGames(),
-      ]);
-      setEbooks(e);
-      setGames(g);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { reload(); }, [reload]);
-
-  const lowerSearch = search.toLowerCase();
-  const filteredEbooks = ebooks.filter((e) =>
-    `${e.title} ${e.author} ${e.category}`.toLowerCase().includes(lowerSearch)
-  );
-  const filteredGames = games.filter((g) =>
-    `${g.name} ${g.category}`.toLowerCase().includes(lowerSearch)
-  );
-
-  // E-book handlers
-  const openEditEbook = (e: Ebook) => {
-    setEbookEditing({
-      _id: e.id,
-      title: e.title, slug: e.id, author: e.author,
-      description: e.description, synopsis: e.synopsis,
-      pages: String(e.pages), category: e.category, image: e.image,
-      pdfUrl: e.pdfUrl ?? "", isFree: e.isFree ?? true,
-    });
-    setError(null);
-    setEbookDialog(true);
-  };
-
-  const handleSaveEbook = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const slug = ebookEditing.slug || slugify(ebookEditing.title);
-      if (!ebookEditing.title || !slug) throw new Error("Título é obrigatório");
-      await catalog.upsertEbook({
-        slug,
-        title: ebookEditing.title,
-        author: ebookEditing.author,
-        description: ebookEditing.description,
-        synopsis: ebookEditing.synopsis,
-        pages: parseInt(ebookEditing.pages) || 0,
-        category: ebookEditing.category,
-        image: ebookEditing.image,
-        pdf_url: ebookEditing.pdfUrl || null,
-        is_free: ebookEditing.isFree,
-      });
-      toast({ title: "E-book salvo!" });
-      setEbookDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteEbook = async (id: string) => {
-    if (!confirm("Confirma excluir este e-book?")) return;
-    try {
-      await catalog.deleteEbook(id);
-      toast({ title: "E-book excluído" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  // Game handlers
-  const openEditGame = (g: Game) => {
-    setGameEditing({
-      _id: g.id,
-      name: g.name, slug: g.id, category: g.category,
-      description: g.description, mechanic: g.mechanic,
-      objective: g.objective, image: g.image, isActive: true,
-    });
-    setError(null);
-    setGameDialog(true);
-  };
-
-  const handleSaveGame = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const slug = gameEditing.slug || slugify(gameEditing.name);
-      if (!gameEditing.name || !slug) throw new Error("Nome é obrigatório");
-      await catalog.upsertGame({
-        slug,
-        name: gameEditing.name,
-        category: gameEditing.category,
-        description: gameEditing.description,
-        mechanic: gameEditing.mechanic,
-        objective: gameEditing.objective,
-        image: gameEditing.image,
-        is_active: gameEditing.isActive,
-      });
-      toast({ title: "Jogo salvo!" });
-      setGameDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteGame = async (id: string) => {
-    if (!confirm("Confirma excluir este jogo?")) return;
-    try {
-      await catalog.deleteGame(id);
-      toast({ title: "Jogo excluído" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Toolbar
-        search={search}
-        setSearch={setSearch}
-        onReload={reload}
-        loading={loading}
-        saving={saving}
-        onNew={() => { setEbookEditing(emptyEbookForm); setError(null); setEbookDialog(true); }}
-        newLabel="Novo e-book"
-      />
-      <ErrorBanner message={error} />
-
-      {/* E-books */}
-      <section>
-        <h2 className="font-heading uppercase tracking-wider text-sm mb-2 flex items-center gap-2">
-          <BookOpen size={14} /> E-books ({filteredEbooks.length})
-        </h2>
-        {loading ? <LoadingState /> : filteredEbooks.length === 0 ? (
-          <EmptyState label="Nenhum e-book." />
-        ) : (
-          <div className="space-y-2">
-            {filteredEbooks.map((e) => (
-              <ItemRow
-                key={e.id}
-                title={e.title}
-                subtitle={`${e.author} · ${e.pages}p · ${e.category}`}
-                image={e.image}
-                badges={[{ label: e.isFree === false ? "Pago" : "Gratuito", variant: e.isFree === false ? "outline" : "default" }]}
-                onEdit={() => openEditEbook(e)}
-                onDelete={() => handleDeleteEbook(e.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Jogos */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-heading uppercase tracking-wider text-sm flex items-center gap-2">
-            <Gamepad2 size={14} /> Jogos ({filteredGames.length})
-          </h2>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => { setGameEditing(emptyGameForm); setError(null); setGameDialog(true); }}
-          >
-            <Plus size={14} /> Novo jogo
-          </Button>
-        </div>
-        {filteredGames.length === 0 ? (
-          <EmptyState label="Nenhum jogo." />
-        ) : (
-          <div className="space-y-2">
-            {filteredGames.map((g) => (
-              <ItemRow
-                key={g.id}
-                title={g.name}
-                subtitle={`${g.category} · ${g.mechanic}`}
-                image={g.image}
-                badges={[{ label: "Ativo", variant: "default" }]}
-                onEdit={() => openEditGame(g)}
-                onDelete={() => handleDeleteGame(g.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Diálogo e-book */}
-      <Dialog open={ebookDialog} onOpenChange={setEbookDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{ebookEditing._id ? "Editar" : "Novo"} e-book</DialogTitle>
-          </DialogHeader>
-          <EbookForm data={ebookEditing} onChange={setEbookEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEbookDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEbook} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo jogo */}
-      <Dialog open={gameDialog} onOpenChange={setGameDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{gameEditing._id ? "Editar" : "Novo"} jogo</DialogTitle>
-          </DialogHeader>
-          <GameForm data={gameEditing} onChange={setGameEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setGameDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveGame} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-// ─── Aba 4: Gamificação (Desafios + Conquistas) ──────────────────────────
-
-/**
- * Aba Gamificação — gestão de desafios e conquistas.
- *   • Desafios    — CRUD via catalog.upsertChallenge / deleteChallenge
- *   • Conquistas  — CRUD via admin.upsertAchievement / deleteAchievement
- */
-
-const GamificacaoTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
-  const { toast } = useToast();
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [achievements, setAchievements] = useState<AchievementsRow[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [challengeDialog, setChallengeDialog] = useState(false);
-  const [achievementDialog, setAchievementDialog] = useState(false);
-  const [challengeEditing, setChallengeEditing] = useState<ChallengeFormState>(emptyChallengeForm);
-  const [achievementEditing, setAchievementEditing] = useState<AchievementFormState>(emptyAchievementForm);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      catalog.clearCache();
-      const [c, a] = await Promise.all([
-        catalog.listChallenges(),
-        admin.listAchievements(),
-      ]);
-      setChallenges(c);
-      setAchievements(a);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { reload(); }, [reload]);
-
-  const lowerSearch = search.toLowerCase();
-  const filteredChallenges = challenges.filter((c) =>
-    `${c.title} ${c.category} ${c.difficulty}`.toLowerCase().includes(lowerSearch)
-  );
-  const filteredAchievements = achievements.filter((a) =>
-    `${a.name} ${a.code} ${a.category ?? ""}`.toLowerCase().includes(lowerSearch)
-  );
-
-  // Challenge handlers
-  const openEditChallenge = (c: Challenge) => {
-    setChallengeEditing({
-      _id: String(c.id),
-      title: c.title, description: c.description,
-      difficulty: c.difficulty, category: c.category,
-      xp: String(c.xp), deadline: c.deadline, isActive: true,
-    });
-    setError(null);
-    setChallengeDialog(true);
-  };
-
-  const handleSaveChallenge = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      if (!challengeEditing.title) throw new Error("Título é obrigatório");
-      await catalog.upsertChallenge({
-        ...(challengeEditing._id ? { id: challengeEditing._id } : {}),
-        title: challengeEditing.title,
-        description: challengeEditing.description,
-        difficulty: challengeEditing.difficulty,
-        category: challengeEditing.category,
-        xp: parseInt(challengeEditing.xp) || 0,
-        deadline: challengeEditing.deadline || null,
-        is_active: challengeEditing.isActive,
-      });
-      toast({ title: "Desafio salvo!" });
-      setChallengeDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteChallenge = async (id: string) => {
-    if (!confirm("Confirma excluir este desafio?")) return;
-    try {
-      await catalog.deleteChallenge(id);
-      toast({ title: "Desafio excluído" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  // Achievement handlers
-  const openEditAchievement = (a: AchievementsRow) => {
-    setAchievementEditing({
-      _id: a.id,
-      code: a.code,
-      name: a.name,
-      description: a.description ?? "",
-      icon: a.icon ?? "🏆",
-      xpReward: String(a.xp_reward),
-      category: a.category ?? "",
-    });
-    setError(null);
-    setAchievementDialog(true);
-  };
-
-  const handleSaveAchievement = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      if (!achievementEditing.code || !achievementEditing.name) {
-        throw new Error("Código e nome são obrigatórios");
-      }
-      await admin.upsertAchievement({
-        ...(achievementEditing._id ? { id: achievementEditing._id } : {}),
-        code: achievementEditing.code,
-        name: achievementEditing.name,
-        description: achievementEditing.description || null,
-        icon: achievementEditing.icon || null,
-        xp_reward: parseInt(achievementEditing.xpReward) || 0,
-        category: achievementEditing.category || null,
-      });
-      toast({ title: "Conquista salva!" });
-      setAchievementDialog(false);
-      reload();
-      onDataChanged();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteAchievement = async (id: string) => {
-    if (!confirm("Confirma excluir esta conquista?")) return;
-    try {
-      await admin.deleteAchievement(id);
-      toast({ title: "Conquista excluída" });
-      reload();
-      onDataChanged();
-    } catch (err) {
-      toast({ title: "Erro", description: (err as Error).message, variant: "destructive" });
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Toolbar
-        search={search}
-        setSearch={setSearch}
-        onReload={reload}
-        loading={loading}
-        saving={saving}
-        onNew={() => { setChallengeEditing(emptyChallengeForm); setError(null); setChallengeDialog(true); }}
-        newLabel="Novo desafio"
-      />
-      <ErrorBanner message={error} />
-
-      {/* Desafios */}
-      <section>
-        <h2 className="font-heading uppercase tracking-wider text-sm mb-2 flex items-center gap-2">
-          <Trophy size={14} /> Desafios ({filteredChallenges.length})
-        </h2>
-        {loading ? <LoadingState /> : filteredChallenges.length === 0 ? (
-          <EmptyState label="Nenhum desafio." />
-        ) : (
-          <div className="space-y-2">
-            {filteredChallenges.map((c) => (
-              <ItemRow
-                key={c.id}
-                title={c.title}
-                subtitle={`${c.difficulty} · ${c.category} · ${c.xp} XP`}
-                extra={c.deadline ? fmtDate(c.deadline) : "—"}
-                badges={[{ label: c.difficulty, variant: c.difficulty === "Extremo" ? "destructive" : "secondary" }]}
-                onEdit={() => openEditChallenge(c)}
-                onDelete={() => handleDeleteChallenge(String(c.id))}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Conquistas */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-heading uppercase tracking-wider text-sm flex items-center gap-2">
-            <Award size={14} /> Conquistas ({filteredAchievements.length})
-          </h2>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => { setAchievementEditing(emptyAchievementForm); setError(null); setAchievementDialog(true); }}
-          >
-            <Plus size={14} /> Nova conquista
-          </Button>
-        </div>
-        {filteredAchievements.length === 0 ? (
-          <EmptyState label="Nenhuma conquista." />
-        ) : (
-          <div className="space-y-2">
-            {filteredAchievements.map((a) => (
-              <ItemRow
-                key={a.id}
-                title={`${a.icon ?? "🏆"} ${a.name}`}
-                subtitle={`${a.code} · ${a.category ?? "—"} · +${a.xp_reward} XP`}
-                extra={a.description ?? ""}
-                badges={[{ label: `+${a.xp_reward} XP`, variant: "default" }]}
-                onEdit={() => openEditAchievement(a)}
-                onDelete={() => handleDeleteAchievement(a.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Diálogo desafio */}
-      <Dialog open={challengeDialog} onOpenChange={setChallengeDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{challengeEditing._id ? "Editar" : "Novo"} desafio</DialogTitle>
-          </DialogHeader>
-          <ChallengeForm data={challengeEditing} onChange={setChallengeEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setChallengeDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveChallenge} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo conquista */}
-      <Dialog open={achievementDialog} onOpenChange={setAchievementDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{achievementEditing._id ? "Editar" : "Nova"} conquista</DialogTitle>
-          </DialogHeader>
-          <AchievementForm data={achievementEditing} onChange={setAchievementEditing} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAchievementDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveAchievement} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-// ─── Aba 5: Sistema (Estatísticas + Log de atividade) ──────────────────────
-
-/**
- * Aba Sistema — dashboard com contagens das principais tabelas e viewer do
- * log de atividade com filtro por user_id e activity_type. Paginação de 50
- * itens por página.
- */
-
-interface StatsData {
-  users: number; products: number; ebooks: number; games: number;
-  challenges: number; achievements: number; categories: number;
-  waypoints: number; routes: number; activityLog: number;
 }
 
-const SistemaTab = ({ onDataChanged }: { onDataChanged: () => void }) => {
-  const { toast } = useToast();
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
-  const [searchUserId, setSearchUserId] = useState("");
-  const [searchType, setSearchType] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+// ─── 7. Categorias ──────────────────────────────────────────────────────────
+
+const CATEGORY_TYPE_OPTIONS: { value: CategoryType; label: string }[] = [
+  { value: "product", label: "Produto" },
+  { value: "ebook", label: "E-book" },
+  { value: "game", label: "Jogo" },
+  { value: "challenge", label: "Desafio" },
+];
+
+const emptyCategoryForm: CategoryFormState = {
+  name: "",
+  slug: "",
+  type: "product",
+  description: "",
+};
+
+function CategoriesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [items, setItems] = useState<CategoryRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const PER_PAGE = 50;
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CategoryRow | null>(null);
+  const [form, setForm] = useState<CategoryFormState>(emptyCategoryForm);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<CategoryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const reloadStats = useCallback(async () => {
-    try {
-      const s = await admin.stats();
-      setStats({
-        users: s.users, products: s.products, ebooks: s.ebooks, games: s.games,
-        challenges: s.challenges, achievements: s.achievements,
-        categories: s.categories, waypoints: s.waypoints,
-        routes: s.routes, activityLog: s.activityLog,
-      });
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  }, []);
-
-  const reloadActivity = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, total: t } = await admin.listActivityLog({
-        page,
-        perPage: PER_PAGE,
-        userId: searchUserId || undefined,
-        type: searchType || undefined,
-      });
-      setActivity(data);
-      setTotal(t);
-    } catch (err) {
-      setError((err as Error).message);
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name");
+      if (error) throw new Error(`Erro ao listar categorias: ${error.message}`);
+      setItems((data ?? []) as CategoryRow[]);
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [page, searchUserId, searchType]);
+  }, []);
 
-  useEffect(() => { reloadStats(); }, [reloadStats]);
   useEffect(() => {
-    const t = setTimeout(() => reloadActivity(), 300);
-    return () => clearTimeout(t);
-  }, [reloadActivity]);
+    load();
+  }, [load]);
 
-  const statsCards: { label: string; value: number; icon: React.ElementType }[] = stats ? [
-    { label: "Usuários", value: stats.users, icon: Users },
-    { label: "Produtos", value: stats.products, icon: ShoppingBag },
-    { label: "E-books", value: stats.ebooks, icon: Book },
-    { label: "Jogos", value: stats.games, icon: Gamepad2 },
-    { label: "Desafios", value: stats.challenges, icon: Trophy },
-    { label: "Conquistas", value: stats.achievements, icon: Award },
-    { label: "Categorias", value: stats.categories, icon: Package },
-    { label: "Waypoints", value: stats.waypoints, icon: Zap },
-    { label: "Rotas", value: stats.routes, icon: Eye },
-    { label: "Logs", value: stats.activityLog, icon: Activity },
-  ] : [];
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (slugEdited) return;
+    setForm((f) => ({ ...f, slug: slugify(f.name) }));
+  }, [form.name, dialogOpen, slugEdited]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const filtered = items.filter((c) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (c.name ?? "").toLowerCase().includes(q) ||
+      (c.slug ?? "").toLowerCase().includes(q) ||
+      (c.type ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyCategoryForm);
+    setSlugEdited(false);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (c: CategoryRow) => {
+    setEditing(c);
+    setForm({
+      name: c.name ?? "",
+      slug: c.slug ?? "",
+      type: c.type ?? "product",
+      description: c.description ?? "",
+    });
+    setSlugEdited(true);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm(emptyCategoryForm);
+    setSlugEdited(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      toast.error("Informe o nome da categoria");
+      return;
+    }
+    const slug = slugify(form.slug) || slugify(form.name);
+    if (!slug) {
+      toast.error("Slug inválido");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        slug,
+        type: form.type,
+        description: form.description.trim() || null,
+      };
+      const { data, error } = await supabase
+        .from("categories")
+        .upsert(payload, { onConflict: "slug" })
+        .select()
+        .single();
+      if (error) throw new Error(`Erro ao salvar categoria: ${error.message}`);
+      const newRow = data as CategoryRow;
+      const next = editing
+        ? items.map((c) => (c.id === newRow.id ? newRow : c))
+        : [...items, newRow];
+      setItems(next);
+      toast.success(editing ? "Categoria atualizada" : "Categoria criada");
+      closeDialog();
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("slug", confirmDelete.slug);
+      if (error) throw new Error(`Erro ao excluir categoria: ${error.message}`);
+      setItems(items.filter((c) => c.id !== confirmDelete.id));
+      toast.success("Categoria excluída");
+      setConfirmDelete(null);
+      onCountsChanged?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <ErrorBanner message={error} />
-
-      {/* Dashboard de estatísticas */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-heading uppercase tracking-wider text-sm flex items-center gap-2">
-            <Activity size={14} /> Estatísticas do sistema
-          </h2>
-          <Button variant="outline" size="sm" onClick={() => { reloadStats(); onDataChanged(); }}>
-            <RefreshCw size={14} /> Atualizar
-          </Button>
-        </div>
-        {!stats ? <LoadingState /> : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {statsCards.map((c) => (
-              <div key={c.label} className="p-3 rounded-lg border border-border bg-card">
-                <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <c.icon size={12} /> {c.label}
-                </div>
-                <p className="font-mono text-2xl font-bold text-foreground mt-1">{c.value}</p>
-              </div>
+    <div>
+      <SectionHeader
+        title="Categorias"
+        description="Taxonomia compartilhada entre produtos, e-books, jogos e desafios."
+      />
+      <Toolbar
+        search={search}
+        setSearch={setSearch}
+        onRefresh={load}
+        onCreate={openCreate}
+        placeholder="Buscar por nome, slug, tipo..."
+        createLabel="Nova categoria"
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {loading ? (
+        <Loader label="Carregando categorias..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Nome</Th>
+              <Th>Slug</Th>
+              <Th>Tipo</Th>
+              <Th>Descrição</Th>
+              <Th className="text-right">Ações</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((c) => (
+              <tr key={c.id} className="border-t hover:bg-muted/20">
+                <Td>
+                  <div className="font-medium truncate max-w-[200px]">{c.name}</div>
+                </Td>
+                <Td>
+                  <code className="text-xs text-muted-foreground">/{c.slug}</code>
+                </Td>
+                <Td>
+                  <CategoryTypeBadge t={c.type} />
+                </Td>
+                <Td>
+                  <div className="text-muted-foreground truncate max-w-[300px]">
+                    {c.description ?? "—"}
+                  </div>
+                </Td>
+                <Td>
+                  <RowActions
+                    onEdit={() => openEdit(c)}
+                    onDelete={() => setConfirmDelete(c)}
+                  />
+                </Td>
+              </tr>
             ))}
+          </tbody>
+        </TableShell>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar categoria" : "Nova categoria"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+            <Field label="Nome" full>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex.: Cutelaria"
+              />
+            </Field>
+            <Field label="Slug" hint="Usado na URL (auto-gerado do nome)">
+              <Input
+                value={form.slug}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  setForm({ ...form, slug: e.target.value });
+                }}
+                placeholder="cutelaria"
+              />
+            </Field>
+            <Field label="Tipo">
+              <NativeSelect
+                value={form.type}
+                onChange={(v) => setForm({ ...form, type: v as CategoryType })}
+                options={CATEGORY_TYPE_OPTIONS}
+              />
+            </Field>
+            <Field label="Descrição" full>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                placeholder="Opcional"
+              />
+            </Field>
           </div>
-        )}
-      </section>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Log de atividade */}
-      <section>
-        <h2 className="font-heading uppercase tracking-wider text-sm mb-2 flex items-center gap-2">
-          <Database size={14} /> Log de atividade
-        </h2>
-        <div className="flex flex-col sm:flex-row gap-2 mb-3">
-          <Input
-            placeholder="Filtrar por user_id (UUID completo ou prefixo)"
-            value={searchUserId}
-            onChange={(e) => { setSearchUserId(e.target.value); setPage(1); }}
-            className="font-mono text-xs"
-          />
-          <Input
-            placeholder="Filtrar por activity_type (ex: waypoint_created)"
-            value={searchType}
-            onChange={(e) => { setSearchType(e.target.value); setPage(1); }}
-            className="text-xs"
-          />
-          <Button variant="outline" size="sm" onClick={reloadActivity} disabled={loading}>
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
-          </Button>
-        </div>
+      <ConfirmDelete
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        message={
+          confirmDelete
+            ? `Excluir a categoria "${confirmDelete.name}" (slug: ${confirmDelete.slug})?`
+            : ""
+        }
+      />
+    </div>
+  );
+}
 
-        {loading ? <LoadingState /> : activity.length === 0 ? (
-          <EmptyState label="Nenhuma atividade encontrada." />
+// ─── 8. Sistema (stats + activity log) ──────────────────────────────────────
+
+interface StatItem {
+  key: string;
+  label: string;
+  value: number;
+  loading: boolean;
+}
+
+function SystemSection() {
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [activities, setActivities] = useState<ActivityLogRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const tables = [
+        "profiles",
+        "products",
+        "ebooks",
+        "games",
+        "challenges",
+        "achievements",
+        "categories",
+        "waypoints",
+        "routes",
+        "activity_log",
+      ];
+      const labels: Record<string, string> = {
+        profiles: "Usuários",
+        products: "Produtos",
+        ebooks: "E-books",
+        games: "Jogos",
+        challenges: "Desafios",
+        achievements: "Conquistas",
+        categories: "Categorias",
+        waypoints: "Waypoints",
+        routes: "Rotas",
+        activity_log: "Logs de Atividade",
+      };
+
+      const countResults = await Promise.all(
+        tables.map(async (t) => {
+          try {
+            const { count, error } = await supabase
+              .from(t)
+              .select("*", { count: "exact", head: true });
+            if (error) {
+              return { key: t, value: 0, loading: false, error: error.message };
+            }
+            return { key: t, value: count ?? 0, loading: false };
+          } catch (e) {
+            return { key: t, value: 0, loading: false, error: (e as Error).message };
+          }
+        })
+      );
+
+      setStats(
+        countResults.map((r) => ({
+          key: r.key,
+          label: labels[r.key] ?? r.key,
+          value: r.value,
+          loading: r.loading,
+        }))
+      );
+
+      // Activity log (últimos 200)
+      const { data: logData, error: logError } = await supabase
+        .from("activity_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (logError) {
+        throw new Error(`Erro ao carregar log de atividade: ${logError.message}`);
+      }
+      setActivities((logData ?? []) as ActivityLogRow[]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const activityTypes = Array.from(
+    new Set(activities.map((a) => a.activity_type).filter(Boolean))
+  ).sort();
+
+  const filtered = filter
+    ? activities.filter((a) => a.activity_type === filter)
+    : activities;
+
+  return (
+    <div>
+      <SectionHeader
+        title="Sistema"
+        description="Visão geral do banco de dados e auditoria de atividades."
+      />
+
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Contagens
+        </h3>
+        <Button variant="outline" size="sm" onClick={load} className="h-9">
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="sr-only">Recarregar</span>
+        </Button>
+      </div>
+
+      {error && <ErrorBanner message={error} onRetry={load} />}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+        {stats.length === 0 && loading ? (
+          <div className="col-span-full">
+            <Loader label="Carregando estatísticas..." />
+          </div>
         ) : (
-          <div className="overflow-x-auto border border-border rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-2 font-medium">Criado em</th>
-                  <th className="text-left p-2 font-medium">User</th>
-                  <th className="text-left p-2 font-medium">Tipo</th>
-                  <th className="text-left p-2 font-medium">Descrição</th>
-                  <th className="text-right p-2 font-medium">XP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activity.map((a) => (
-                  <tr key={a.id} className="border-t border-border hover:bg-muted/30">
-                    <td className="p-2 whitespace-nowrap text-xs text-muted-foreground">
-                      {fmtDate(a.created_at)}
-                    </td>
-                    <td className="p-2 font-mono text-xs">
-                      {a.user_id?.slice(0, 8) ?? "—"}
-                    </td>
-                    <td className="p-2">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {a.activity_type}
-                      </Badge>
-                    </td>
-                    <td className="p-2">{a.description ?? "—"}</td>
-                    <td className="p-2 text-right font-mono text-xs">
-                      {a.xp_awarded > 0 ? `+${a.xp_awarded}` : a.xp_awarded}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          stats.map((s) => (
+            <Card key={s.key}>
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {s.label}
+                </div>
+                <div className="text-2xl font-semibold mt-1 font-mono">
+                  {s.value}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1 truncate">
+                  {s.key}
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
-
-        {/* Paginação */}
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-muted-foreground">
-            Página {page} de {totalPages} · {total} itens
-          </span>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronDown className="rotate-90" size={14} /> Anterior
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Próxima <ChevronUp className="-rotate-90" size={14} />
-            </Button>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-};
-
-// ─── Formulários (sub-componentes) ─────────────────────────────────────────
-
-const ProductForm = ({ data, onChange }: { data: ProductFormState; onChange: (d: ProductFormState) => void }) => {
-  const set = <K extends keyof ProductFormState>(k: K, v: ProductFormState[K]) =>
-    onChange({ ...data, [k]: v });
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Nome *"><Input value={data.name} onChange={(e) => set("name", e.target.value)} /></Field>
-        <Field label="Slug (URL)"><Input value={data.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-gerado do nome" /></Field>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Categoria"><Input value={data.category} onChange={(e) => set("category", e.target.value)} /></Field>
-        <Field label="Preço"><Input value={data.price} onChange={(e) => set("price", e.target.value)} placeholder="R$ 0,00" /></Field>
-      </div>
-      <Field label="Descrição curta"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={2} /></Field>
-      <Field label="Descrição completa"><Textarea value={data.fullDescription} onChange={(e) => set("fullDescription", e.target.value)} rows={3} /></Field>
-      <Field label="URL da imagem"><Input value={data.image} onChange={(e) => set("image", e.target.value)} placeholder="https://…" /></Field>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Rede de afiliados">
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Log de Atividade
+        </h3>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="act-filter" className="text-xs text-muted-foreground">
+            Filtrar por tipo:
+          </Label>
           <select
-            value={data.affiliateNetwork}
-            onChange={(e) => set("affiliateNetwork", e.target.value)}
-            className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+            id="act-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {AFFILIATE_NETWORKS.map((n) => (
-              <option key={n.value} value={n.value}>{n.label}</option>
+            <option value="">Todos</option>
+            {activityTypes.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
-        </Field>
-        <Field label="Link de afiliado (buy_link)">
-          <Input value={data.buyLink} onChange={(e) => set("buyLink", e.target.value)} placeholder="https://…" />
-        </Field>
+        </div>
       </div>
-      <Field label="Especificações (uma por linha)">
-        <Textarea value={data.specs} onChange={(e) => set("specs", e.target.value)} rows={3} placeholder={"45 litros\nNylon 900D\nImpermeável"} />
-      </Field>
-      <Field label="Benefícios (um por linha)">
-        <Textarea value={data.benefits} onChange={(e) => set("benefits", e.target.value)} rows={3} placeholder={"Alta durabilidade\nImpermeável"} />
-      </Field>
-      <div className="flex gap-6 pt-2">
-        <label className="flex items-center gap-2">
-          <Switch checked={data.inStock} onCheckedChange={(v) => set("inStock", v)} />
-          <span className="text-sm">Em estoque</span>
-        </label>
-        <label className="flex items-center gap-2">
-          <Switch checked={data.featured} onCheckedChange={(v) => set("featured", v)} />
-          <span className="text-sm">Destaque</span>
-        </label>
-      </div>
+
+      {loading ? (
+        <Loader label="Carregando log..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Nenhuma atividade registrada" />
+      ) : (
+        <TableShell>
+          <thead className="bg-muted/40">
+            <tr>
+              <Th>Data / Hora</Th>
+              <Th>User ID</Th>
+              <Th>Tipo</Th>
+              <Th>Descrição</Th>
+              <Th className="text-right">XP</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((a) => (
+              <tr key={a.id} className="border-t hover:bg-muted/20">
+                <Td className="text-muted-foreground whitespace-nowrap">
+                  {formatDateTime(a.created_at)}
+                </Td>
+                <Td>
+                  <code className="text-xs text-muted-foreground">
+                    {a.user_id?.slice(0, 8) ?? "—"}…
+                  </code>
+                </Td>
+                <Td>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {a.activity_type ?? "—"}
+                  </Badge>
+                </Td>
+                <Td>
+                  <div className="text-muted-foreground truncate max-w-[400px]">
+                    {a.description ?? "—"}
+                  </div>
+                </Td>
+                <Td className="text-right font-mono">{a.xp_awarded ?? 0}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableShell>
+      )}
     </div>
   );
-};
+}
 
-const CategoryForm = ({ data, onChange }: { data: CategoryFormState; onChange: (d: CategoryFormState) => void }) => {
-  const set = <K extends keyof CategoryFormState>(k: K, v: CategoryFormState[K]) =>
-    onChange({ ...data, [k]: v });
+// ─── Sidebar ────────────────────────────────────────────────────────────────
+
+interface SidebarItem {
+  key: SectionKey;
+  label: string;
+  short: string;
+  icon: React.ElementType;
+}
+
+const SIDEBAR_ITEMS: SidebarItem[] = [
+  { key: "users", label: "Usuários", short: "Users", icon: Users },
+  { key: "products", label: "Produtos", short: "Prods", icon: Package },
+  { key: "ebooks", label: "E-books", short: "Ebooks", icon: BookOpen },
+  { key: "games", label: "Jogos", short: "Games", icon: Gamepad2 },
+  { key: "challenges", label: "Desafios", short: "Chall", icon: Trophy },
+  { key: "achievements", label: "Conquistas", short: "Achiev", icon: Star },
+  { key: "categories", label: "Categorias", short: "Categ", icon: FolderTree },
+  { key: "system", label: "Sistema", short: "Stats", icon: BarChart3 },
+];
+
+function Sidebar({
+  active,
+  onChange,
+  counts,
+}: {
+  active: SectionKey;
+  onChange: (k: SectionKey) => void;
+  counts: Partial<Record<SectionKey, number>>;
+}) {
   return (
-    <div className="space-y-3">
-      <Field label="Nome *"><Input value={data.name} onChange={(e) => set("name", e.target.value)} /></Field>
-      <Field label="Slug (URL)"><Input value={data.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-gerado do nome" /></Field>
-      <Field label="Tipo">
-        <select
-          value={data.type}
-          onChange={(e) => set("type", e.target.value as CategoryType)}
-          className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-        >
-          <option value="product">Produto</option>
-          <option value="ebook">E-book</option>
-          <option value="game">Jogo</option>
-          <option value="challenge">Desafio</option>
-        </select>
-      </Field>
-      <Field label="Descrição"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={2} /></Field>
-    </div>
+    <aside
+      className="w-14 md:w-48 shrink-0 border-r bg-card overflow-y-auto"
+      aria-label="Navegação do painel"
+    >
+      <nav className="flex flex-col p-2 gap-1">
+        {SIDEBAR_ITEMS.map((it) => {
+          const Icon = it.icon;
+          const isActive = active === it.key;
+          const count = counts[it.key];
+          return (
+            <button
+              key={it.key}
+              onClick={() => onChange(it.key)}
+              className={`group flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+              title={it.label}
+            >
+              <Icon className="h-4 w-4 shrink-0 mx-auto md:mx-0" />
+              <span className="hidden md:inline flex-1 text-left truncate">
+                {it.label}
+              </span>
+              {count != null && it.key !== "system" && (
+                <span
+                  className={`hidden md:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-mono ${
+                    isActive
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground group-hover:bg-background"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
   );
-};
+}
 
-const EbookForm = ({ data, onChange }: { data: EbookFormState; onChange: (d: EbookFormState) => void }) => {
-  const set = <K extends keyof EbookFormState>(k: K, v: EbookFormState[K]) =>
-    onChange({ ...data, [k]: v });
+// ─── TopBar ─────────────────────────────────────────────────────────────────
+
+function TopBar({
+  email,
+  onLogout,
+}: {
+  email: string;
+  onLogout: () => void | Promise<void>;
+}) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Título *"><Input value={data.title} onChange={(e) => set("title", e.target.value)} /></Field>
-        <Field label="Slug (URL)"><Input value={data.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-gerado do título" /></Field>
+    <header className="h-14 shrink-0 border-b bg-card flex items-center px-3 sm:px-4 gap-3">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">
+          CS
+        </div>
+        <h1 className="text-sm sm:text-base font-semibold tracking-tight">
+          <span className="hidden sm:inline">PAINEL ADMIN</span>
+          <span className="sm:hidden">ADMIN</span>
+        </h1>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Autor"><Input value={data.author} onChange={(e) => set("author", e.target.value)} /></Field>
-        <Field label="Páginas"><Input type="number" value={data.pages} onChange={(e) => set("pages", e.target.value)} /></Field>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Categoria"><Input value={data.category} onChange={(e) => set("category", e.target.value)} /></Field>
-        <Field label="PDF URL (opcional)"><Input value={data.pdfUrl} onChange={(e) => set("pdfUrl", e.target.value)} placeholder="https://…" /></Field>
-      </div>
-      <Field label="Descrição curta"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={2} /></Field>
-      <Field label="Sinopse"><Textarea value={data.synopsis} onChange={(e) => set("synopsis", e.target.value)} rows={3} /></Field>
-      <Field label="URL da capa"><Input value={data.image} onChange={(e) => set("image", e.target.value)} placeholder="https://…" /></Field>
-      <label className="flex items-center gap-2 pt-2">
-        <Switch checked={data.isFree} onCheckedChange={(v) => set("isFree", v)} />
-        <span className="text-sm">E-book gratuito</span>
-      </label>
-    </div>
-  );
-};
 
-const GameForm = ({ data, onChange }: { data: GameFormState; onChange: (d: GameFormState) => void }) => {
-  const set = <K extends keyof GameFormState>(k: K, v: GameFormState[K]) =>
-    onChange({ ...data, [k]: v });
+      <div className="flex-1" />
+
+      <div className="hidden md:flex items-center text-xs text-muted-foreground truncate max-w-[260px]">
+        <span className="truncate">{email}</span>
+      </div>
+
+      <Button asChild variant="outline" size="sm" className="h-9">
+        <Link to="/" target="_blank" rel="noreferrer">
+          <ExternalLink className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline ml-1">Ver site</span>
+        </Link>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+        onClick={() => onLogout()}
+      >
+        <LogOut className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline ml-1">Sair</span>
+      </Button>
+    </header>
+  );
+}
+
+// ─── Admin (default export) ─────────────────────────────────────────────────
+
+export default function Admin() {
+  const { user, logout } = useAuth();
+  // Mantém o hook useToast referenciado (especificado no bloco de imports).
+  // As notificações visíveis são exibidas via sonner (toast.success / toast.error).
+  useToast();
+  const [active, setActive] = useState<SectionKey>("users");
+  const [counts, setCounts] = useState<Partial<Record<SectionKey, number>>>({});
+
+  const reloadCounts = useCallback(async () => {
+    try {
+      const tables: SectionKey[] = [
+        "users",
+        "products",
+        "ebooks",
+        "games",
+        "challenges",
+        "achievements",
+        "categories",
+      ];
+      const results = await Promise.all(
+        tables.map(async (t) => {
+          try {
+            const { count, error } = await supabase
+              .from(t)
+              .select("*", { count: "exact", head: true });
+            if (error) return [t, 0] as [SectionKey, number];
+            return [t, count ?? 0] as [SectionKey, number];
+          } catch {
+            return [t, 0] as [SectionKey, number];
+          }
+        })
+      );
+      const next: Partial<Record<SectionKey, number>> = {};
+      for (const [k, v] of results) next[k] = v;
+      setCounts(next);
+    } catch (e) {
+      console.warn("[admin] reloadCounts falhou:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    reloadCounts();
+  }, [reloadCounts]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // O redirecionamento (rota protegida) cuida do resto.
+    } catch (e) {
+      toast.error(`Erro ao sair: ${(e as Error).message}`);
+    }
+  };
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Nome *"><Input value={data.name} onChange={(e) => set("name", e.target.value)} /></Field>
-        <Field label="Slug (URL)"><Input value={data.slug} onChange={(e) => set("slug", e.target.value)} placeholder="auto-gerado do nome" /></Field>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEO
+        title="Painel Admin — Centro de Sobrevivência"
+        description="Gerenciamento administrativo do Centro de Sobrevivência."
+        noIndex
+      />
+      <TopBar email={user?.email ?? ""} onLogout={handleLogout} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar active={active} onChange={setActive} counts={counts} />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {active === "users" && (
+            <UsersSection
+              onCountsChanged={reloadCounts}
+              currentUserId={user?.id}
+            />
+          )}
+          {active === "products" && (
+            <ProductsSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "ebooks" && (
+            <EbooksSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "games" && (
+            <GamesSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "challenges" && (
+            <ChallengesSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "achievements" && (
+            <AchievementsSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "categories" && (
+            <CategoriesSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "system" && <SystemSection />}
+        </main>
       </div>
-      <Field label="Categoria"><Input value={data.category} onChange={(e) => set("category", e.target.value)} /></Field>
-      <Field label="Descrição"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={2} /></Field>
-      <Field label="URL da imagem"><Input value={data.image} onChange={(e) => set("image", e.target.value)} placeholder="https://…" /></Field>
-      <Field label="Mecânica"><Textarea value={data.mechanic} onChange={(e) => set("mechanic", e.target.value)} rows={2} /></Field>
-      <Field label="Objetivo"><Textarea value={data.objective} onChange={(e) => set("objective", e.target.value)} rows={2} /></Field>
-      <label className="flex items-center gap-2 pt-2">
-        <Switch checked={data.isActive} onCheckedChange={(v) => set("isActive", v)} />
-        <span className="text-sm">Jogo ativo</span>
-      </label>
     </div>
   );
-};
-
-const ChallengeForm = ({ data, onChange }: { data: ChallengeFormState; onChange: (d: ChallengeFormState) => void }) => {
-  const set = <K extends keyof ChallengeFormState>(k: K, v: ChallengeFormState[K]) =>
-    onChange({ ...data, [k]: v });
-  return (
-    <div className="space-y-3">
-      <Field label="Título *"><Input value={data.title} onChange={(e) => set("title", e.target.value)} /></Field>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Dificuldade">
-          <select
-            value={data.difficulty}
-            onChange={(e) => set("difficulty", e.target.value as Difficulty)}
-            className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-          >
-            <option value="Fácil">Fácil</option>
-            <option value="Médio">Médio</option>
-            <option value="Difícil">Difícil</option>
-            <option value="Extremo">Extremo</option>
-          </select>
-        </Field>
-        <Field label="Categoria"><Input value={data.category} onChange={(e) => set("category", e.target.value)} /></Field>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="XP"><Input type="number" value={data.xp} onChange={(e) => set("xp", e.target.value)} /></Field>
-        <Field label="Deadline (data/hora)"><Input type="datetime-local" value={data.deadline} onChange={(e) => set("deadline", e.target.value)} /></Field>
-      </div>
-      <Field label="Descrição"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={3} /></Field>
-      <label className="flex items-center gap-2 pt-2">
-        <Switch checked={data.isActive} onCheckedChange={(v) => set("isActive", v)} />
-        <span className="text-sm">Desafio ativo</span>
-      </label>
-    </div>
-  );
-};
-
-const AchievementForm = ({ data, onChange }: { data: AchievementFormState; onChange: (d: AchievementFormState) => void }) => {
-  const set = <K extends keyof AchievementFormState>(k: K, v: AchievementFormState[K]) =>
-    onChange({ ...data, [k]: v });
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Código *"><Input value={data.code} onChange={(e) => set("code", e.target.value)} placeholder="ex: first_waypoint" /></Field>
-        <Field label="Ícone (emoji)"><Input value={data.icon} onChange={(e) => set("icon", e.target.value)} placeholder="🏆" /></Field>
-      </div>
-      <Field label="Nome *"><Input value={data.name} onChange={(e) => set("name", e.target.value)} /></Field>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Recompensa XP"><Input type="number" value={data.xpReward} onChange={(e) => set("xpReward", e.target.value)} /></Field>
-        <Field label="Categoria"><Input value={data.category} onChange={(e) => set("category", e.target.value)} /></Field>
-      </div>
-      <Field label="Descrição"><Textarea value={data.description} onChange={(e) => set("description", e.target.value)} rows={2} /></Field>
-    </div>
-  );
-};
-
-export default Admin;
+}
