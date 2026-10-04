@@ -62,6 +62,7 @@ import {
   ExternalLink,
   LogOut,
   X,
+  Link2,
 } from "lucide-react";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -1014,6 +1015,13 @@ function ProductsSection({ onCountsChanged }: { onCountsChanged?: () => void }) 
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<ProductRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Importação por link
+  const [importOpen, setImportOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importedProducts, setImportedProducts] = useState<any[]>([]);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [savingImport, setSavingImport] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1159,6 +1167,70 @@ function ProductsSection({ onCountsChanged }: { onCountsChanged?: () => void }) 
     }
   };
 
+  // ─── Importação por link ───
+  const handleImport = async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportError(null);
+    setImportedProducts([]);
+    try {
+      const res = await fetch("/api/import-ml", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.detail || "Erro ao importar");
+      if (!data.products || data.products.length === 0) {
+        throw new Error("Nenhum produto encontrado neste link.");
+      }
+      setImportedProducts(data.products);
+      toast.success(`${data.products.length} produtos encontrados!`);
+    } catch (e) {
+      setImportError((e as Error).message);
+      toast.error("Erro ao importar: " + (e as Error).message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleSaveImported = async () => {
+    setSavingImport(true);
+    let saved = 0;
+    let failed = 0;
+    for (const p of importedProducts) {
+      try {
+        const slug = slugify(p.title || `produto-ml-${Date.now()}-${saved}`);
+        const { error: upsertError } = await supabase
+          .from("products")
+          .upsert({
+            slug,
+            name: p.title || "Produto importado",
+            category: p.category || "Importados",
+            description: p.title || "",
+            full_description: p.title || "",
+            price: p.price || "",
+            image: p.image || "",
+            buy_link: p.buyLink || p.url || "",
+            affiliate_network: "mercadolivre",
+            in_stock: true,
+            featured: false,
+          }, { onConflict: "slug" });
+        if (upsertError) throw upsertError;
+        saved++;
+      } catch {
+        failed++;
+      }
+    }
+    toast.success(`${saved} produtos importados!${failed > 0 ? ` (${failed} falharam)` : ""}`);
+    setSavingImport(false);
+    setImportOpen(false);
+    setImportedProducts([]);
+    setImportUrl("");
+    load();
+    onCountsChanged?.();
+  };
+
   return (
     <div>
       <SectionHeader
@@ -1173,6 +1245,17 @@ function ProductsSection({ onCountsChanged }: { onCountsChanged?: () => void }) 
         placeholder="Buscar por nome, slug, categoria..."
         createLabel="Novo produto"
       />
+      {/* Botão de importação por link */}
+      <div className="mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { setImportOpen(true); setImportError(null); setImportedProducts([]); }}
+          className="gap-2"
+        >
+          <Link2 size={14} /> Importar por link (Mercado Livre)
+        </Button>
+      </div>
       {error && <ErrorBanner message={error} onRetry={load} />}
       {loading ? (
         <Loader label="Carregando produtos..." />
@@ -1366,6 +1449,67 @@ function ProductsSection({ onCountsChanged }: { onCountsChanged?: () => void }) 
             : ""
         }
       />
+
+      {/* Dialog de Importação por Link */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Importar produtos por link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Cole um link de lista de produtos do Mercado Livre (ex: meli.la/xxx) e a aplicação
+              extrairá todos os produtos automaticamente.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder="https://meli.la/..."
+                className="flex-1"
+              />
+              <Button onClick={handleImport} disabled={importing || !importUrl.trim()}>
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {importing ? "Buscando..." : "Buscar"}
+              </Button>
+            </div>
+            {importError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/40 text-sm text-destructive">
+                {importError}
+              </div>
+            )}
+            {importedProducts.length > 0 && (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                <p className="text-sm font-medium text-foreground">
+                  {importedProducts.length} produtos encontrados:
+                </p>
+                {importedProducts.map((p, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg border border-border">
+                    {p.image && (
+                      <img src={p.image} alt="" className="w-12 h-12 rounded object-cover" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground truncate">{p.title}</p>
+                      {p.price && <p className="text-xs text-muted-foreground">{p.price}</p>}
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">ML</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={handleSaveImported}
+              disabled={savingImport || importedProducts.length === 0}
+            >
+              {savingImport ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Salvar {importedProducts.length > 0 ? `${importedProducts.length} ` : ""}produtos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
