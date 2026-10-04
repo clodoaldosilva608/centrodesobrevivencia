@@ -13,12 +13,13 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import Layout from "@/components/Layout";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Package, BookOpen, Gamepad2, Trophy, Pencil, Trash2, Plus, Search,
   X, AlertCircle, Loader2, Database, RefreshCw, Users, ShoppingBag,
   Book, Award, Activity, Shield, ChevronUp, ChevronDown, Eye, Zap,
+  ExternalLink, User, LogOut,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -262,7 +263,7 @@ const ItemRow = ({ title, subtitle, extra, image, featured, badges = [], onEdit,
 // ─── Componente principal ───────────────────────────────────────────────────
 
 const Admin = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
   const [counts, setCounts] = useState<Record<Tab, number>>({
     usuarios: 0, loja: 0, conteudo: 0, gamificacao: 0, sistema: 0,
@@ -286,56 +287,109 @@ const Admin = () => {
   useEffect(() => { reloadCounts(); }, [reloadCounts]);
 
   return (
-    <Layout>
+    <>
       <SEO
-        title="Administração — Centro de Sobrevivência"
+        title="Painel Admin — Centro de Sobrevivência"
         description="Painel administrativo: usuários, loja, conteúdo, gamificação e sistema."
         noIndex
       />
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div>
-            <h1 className="font-heading text-2xl sm:text-3xl uppercase tracking-wider text-foreground">
-              Administração
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Conectado como <strong>{user?.name}</strong> ({user?.email})
-              {user?.isAdmin && (
-                <Badge className="ml-2 gap-1"><Shield size={10} /> Admin</Badge>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Abas */}
-        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
-                activeTab === t.key
-                  ? "text-primary border-primary"
-                  : "text-muted-foreground border-transparent hover:text-foreground"
-              }`}
-            >
-              <t.icon size={16} /> {t.label}
-              <span className="ml-1 text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                {counts[t.key]}
+      {/* Layout full-screen dedicado — sem Navbar/Footer da landing page */}
+      <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-hidden">
+        {/* Top bar do admin */}
+        <header className="flex items-center justify-between gap-3 px-3 sm:px-4 h-12 sm:h-14 border-b border-border bg-card/80 backdrop-blur shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Voltar ao site">
+              <img src="/icon-192.png" alt="" className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
+              <span className="font-heading text-sm sm:text-base tracking-wider text-foreground hidden sm:block">
+                PAINEL ADMIN
               </span>
-            </button>
-          ))}
-        </div>
+            </Link>
+            <span className="text-muted-foreground/50 mx-1 hidden sm:inline">/</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {user?.name}
+              {user?.isAdmin && (
+                <Badge variant="default" className="ml-2 gap-1 text-[10px] h-4 px-1">
+                  <Shield size={8} /> Admin
+                </Badge>
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-2 text-xs"
+            >
+              <Link to="/" target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={12} /> Ver site
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 gap-2 text-xs"
+            >
+              <Link to="/perfil">
+                <User size={12} /> Perfil
+              </Link>
+            </Button>
+            <Button
+              onClick={async () => {
+                if (confirm("Sair da conta admin?")) {
+                  await logout();
+                  window.location.href = "/";
+                }
+              }}
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-2 text-xs text-destructive hover:text-destructive"
+            >
+              <LogOut size={12} /> Sair
+            </Button>
+          </div>
+        </header>
 
-        {/* Conteúdo da aba ativa */}
-        {activeTab === "usuarios" && <UsuariosTab onDataChanged={reloadCounts} />}
-        {activeTab === "loja" && <LojaTab onDataChanged={reloadCounts} />}
-        {activeTab === "conteudo" && <ConteudoTab onDataChanged={reloadCounts} />}
-        {activeTab === "gamificacao" && <GamificacaoTab onDataChanged={reloadCounts} />}
-        {activeTab === "sistema" && <SistemaTab onDataChanged={reloadCounts} />}
+        {/* Body: sidebar + content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar (lateral em desktop, top bar em mobile) */}
+          <aside className="w-14 sm:w-56 lg:w-64 shrink-0 border-r border-border bg-card/50 overflow-y-auto">
+            <nav className="flex sm:flex-col gap-1 p-2">
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveTab(t.key)}
+                  className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors shrink-0 ${
+                    activeTab === t.key
+                      ? "bg-primary/15 text-primary border-l-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent"
+                  }`}
+                  title={t.label}
+                >
+                  <t.icon size={16} className="shrink-0" />
+                  <span className="hidden sm:inline truncate">{t.label}</span>
+                  <span className="hidden sm:inline-block ml-auto text-xs bg-muted px-1.5 py-0.5 rounded-full shrink-0">
+                    {counts[t.key]}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Content area — scrolla */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="p-3 sm:p-4 lg:p-6 max-w-6xl mx-auto">
+              {activeTab === "usuarios" && <UsuariosTab onDataChanged={reloadCounts} />}
+              {activeTab === "loja" && <LojaTab onDataChanged={reloadCounts} />}
+              {activeTab === "conteudo" && <ConteudoTab onDataChanged={reloadCounts} />}
+              {activeTab === "gamificacao" && <GamificacaoTab onDataChanged={reloadCounts} />}
+              {activeTab === "sistema" && <SistemaTab onDataChanged={reloadCounts} />}
+            </div>
+          </main>
+        </div>
       </div>
-    </Layout>
+    </>
   );
 };
 
