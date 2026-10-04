@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { label: "Comunidade", path: "/comunidade" },
   { label: "Perfil", path: "/perfil" },
   { label: "Estatísticas", path: "/estatisticas" },
-  { label: "Admin", path: "/admin" },
+  // "Admin" foi movido para o Footer (acesso discreto no rodapé)
 ];
 
 const itemClass = (item: NavItem, isActive: boolean) => {
