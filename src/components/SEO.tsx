@@ -54,4 +54,5 @@ const SEO = ({ title, description, image, type = "website", jsonLd, noIndex }: S
   );
 };
 
+export { SEO };
 export default SEO;
