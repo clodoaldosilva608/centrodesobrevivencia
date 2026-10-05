@@ -213,9 +213,9 @@ const Index = () => {
           ))}
         </div>
         <div className="text-center mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><Layers size={12} /> 8 cursos disponíveis</span>
+          <span className="flex items-center gap-1"><Layers size={12} /> 11 cursos disponíveis</span>
           <span className="opacity-40">·</span>
-          <span className="flex items-center gap-1"><Clock size={12} /> 65h+ de conteúdo</span>
+          <span className="flex items-center gap-1"><Clock size={12} /> 92h+ de conteúdo</span>
           <span className="opacity-40">·</span>
           <span className="flex items-center gap-1"><Award size={12} /> Iniciante ao avançado</span>
         </div>
@@ -326,6 +326,53 @@ const Index = () => {
           </Link>
         </div>
       </Section>
+
+      {/* Manifesto CTA — filosofia da marca */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="/cursos/banner-manifesto.webp"
+            alt="Sobreviver é escolha — conhecimento + prática + preparação = liberdade"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
+        </div>
+        <div className="relative container mx-auto px-4 py-16 md:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-xl"
+          >
+            <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-full mb-4">
+              Manifesto
+            </span>
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl tracking-wider uppercase text-foreground leading-tight">
+              Sobreviver é escolha
+            </h2>
+            <p className="mt-3 text-base sm:text-lg text-foreground/85 leading-relaxed">
+              Conhecimento + prática + preparação = liberdade.
+              O Centro de Sobrevivência é mais que um app — é um estilo de vida para quem leva preparo a sério.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/cursos"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-6 py-3 rounded-md hover:opacity-90 transition-opacity text-xs"
+              >
+                Comece agora <ChevronRight size={14} />
+              </Link>
+              <Link
+                to="/comunidade"
+                className="border border-border text-foreground font-heading tracking-wider uppercase px-6 py-3 rounded-md hover:bg-muted transition-colors text-xs"
+              >
+                Entrar na comunidade
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
     </Layout>
   );
 };

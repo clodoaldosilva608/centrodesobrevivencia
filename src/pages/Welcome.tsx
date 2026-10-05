@@ -97,6 +97,25 @@ const Welcome = () => {
         >
           Gratuito • Sem cadastro obrigatório • Comece agora
         </motion.p>
+
+        {/* Brand banner — Aprenda a sobreviver */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4 }}
+          className="mt-12 w-full max-w-2xl mx-auto px-4"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-border">
+            <img
+              src="/cursos/banner-aprenda-sobreviver.webp"
+              alt="Aprenda a sobreviver em qualquer situação — Centro de Sobrevivência"
+              loading="lazy"
+              decoding="async"
+              className="w-full h-auto object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
+          </div>
+        </motion.div>
       </div>
     </div>
   );

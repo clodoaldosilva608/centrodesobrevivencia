@@ -759,6 +759,25 @@ const Simulador = () => {
                   e seu destino. Gerencie saúde, hidratação, energia, nutrição, calor e
                   moral até o resgate chegar.
                 </p>
+                {/* Atmospheric banner */}
+                <div className="relative overflow-hidden rounded-2xl border border-border mt-6">
+                  <img
+                    src="/cursos/banner-fogo-chuva.webp"
+                    alt="Fogueira acesa em floresta à noite durante chuva — atmosfera de sobrevivência"
+                    loading="eager"
+                    decoding="async"
+                    className="w-full h-44 sm:h-56 md:h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+                    <p className="font-heading text-base sm:text-lg uppercase tracking-wider text-foreground">
+                      Quando tudo dá errado, o preparo decide
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      5 biomas · 6 estatísticas · ciclo dia/noite · eventos aleatórios
+                    </p>
+                  </div>
+                </div>
               </header>
 
               <section>

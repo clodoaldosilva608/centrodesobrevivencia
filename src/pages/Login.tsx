@@ -154,6 +154,22 @@ const Login = () => {
                 </motion.div>
               ))}
             </div>
+
+            {/* Brand banner — Sobreviver é uma escolha */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="max-w-md mt-10 relative overflow-hidden rounded-xl border border-border"
+            >
+              <img
+                src="/cursos/banner-sobreviver-escolha.webp"
+                alt="Sobreviver é uma escolha — Centro de Sobrevivência"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-auto object-cover"
+              />
+            </motion.div>
           </div>
         </aside>
 

@@ -201,6 +201,31 @@ const Bussola = () => {
           )}
         </motion.div>
 
+        {/* Educational banner — how to use a compass */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl border border-border mb-8"
+        >
+          <img
+            src="/cursos/banner-bussola.webp"
+            alt="Aprenda a utilizar a bússola — guia visual de orientação"
+            loading="eager"
+            decoding="async"
+            className="w-full max-h-72 object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+            <h3 className="font-heading text-base sm:text-lg uppercase tracking-wider text-foreground">
+              Saber se orientar é ter mais liberdade e segurança
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Conheça as partes da bússola · passo a passo · dicas importantes
+            </p>
+          </div>
+        </motion.div>
+
         {/* Bússola principal */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}

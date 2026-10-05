@@ -136,9 +136,48 @@ const COURSES: Course[] = [
     hours: 8,
     lessons: ["Pederneira avançada", "Tinder úmido", "Bow drill", "Hand drill", "Fogo de longa duração"],
   },
+  {
+    id: "defesa-pessoal",
+    title: "Defesa Pessoal e Combate Corpo a Corpo",
+    subtitle: "Técnicas reais para o mundo real — não ringue",
+    description:
+      "Curso prático de autodefesa focado em situações reais de risco: golpes de imobilização, defesa contra agressores armados, projeções, finalizações e condicionamento físico específico. Inclui disciplina mental e protocolo de fuga antes de confronto.",
+    image: "/cursos/curso-defesa-pessoal.webp",
+    category: "Combate",
+    level: "Avançado",
+    modules: 6,
+    hours: 12,
+    lessons: ["Golpes e defesa base", "Defesa contra faca", "Projeções", "Finalizações", "Condicionamento físico", "Protocolo de fuga"],
+  },
+  {
+    id: "construcao-abrigos",
+    title: "Construção de Abrigos Naturais",
+    subtitle: "Proteção, conforto e segurança em qualquer clima",
+    description:
+      "Aprenda a montar abrigos eficazes com materiais do terreno e lona: tarp, A-frame, cabana de galhos, abrigo iglu/ninja e Debris Hut. Inclui seleção de local, isolamento térmico do solo, impermeabilização e ventilação para fogueira interna.",
+    image: "/cursos/curso-construcao-abrigos.webp",
+    category: "Abrigo",
+    level: "Intermediário",
+    modules: 6,
+    hours: 9,
+    lessons: ["Seleção de local", "Tarp e A-frame", "Cabana de galhos", "Debris Hut", "Iglu ninja", "Fogueira interna segura"],
+  },
+  {
+    id: "bug-out-bag",
+    title: "Montagem de Bug Out Bag (BOB)",
+    subtitle: "Seu kit de emergência para sair do imprevisto",
+    description:
+      "Como montar um BOB completo e leve: água, alimentação, abrigo, roupa, primeiros socorros, ferramentas, navegação, higiene, comunicação, luz e documentos. Inclui checklist imprimível e princípios de priorização por cenário.",
+    image: "/cursos/curso-bug-out-bag.webp",
+    category: "Equipamentos",
+    level: "Iniciante",
+    modules: 5,
+    hours: 6,
+    lessons: ["Filosofia do BOB", "Água e alimentação", "Primeiros socorros", "Ferramentas e navegação", "Documentos e comunicação"],
+  },
 ];
 
-const CATEGORIES = ["Todos", "Fundamentos", "Água", "Bushcraft", "Navegação", "Equipamentos", "Mentalidade", "Campo", "Fogo"];
+const CATEGORIES = ["Todos", "Fundamentos", "Água", "Bushcraft", "Navegação", "Equipamentos", "Mentalidade", "Campo", "Fogo", "Combate", "Abrigo"];
 
 const LEVELS = ["Todos", "Iniciante", "Intermediário", "Avançado"];
 
