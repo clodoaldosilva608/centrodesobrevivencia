@@ -177,26 +177,25 @@ const Index = () => {
         title="Cursos em Destaque"
         subtitle="Trilha progressiva de aprendizado — do iniciante ao avançado"
       >
-        {/* Em breve badge */}
+        {/* Status badge — matrículas abertas */}
         <div className="flex justify-center mb-6">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-widest">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold uppercase tracking-widest">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            Em breve — matrículas abertas em breve
+            Matrículas abertas
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 relative">
-          {/* Overlay de preview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {[
             { id: "essencial-sobrevivencia", title: "Essencial de Sobrevivência", cat: "Fundamentos", img: "/cursos/curso-essencial-sobrevivencia.webp" },
             { id: "dominio-do-fogo", title: "Domínio do Fogo", cat: "Fogo", img: "/cursos/curso-dominio-do-fogo.webp" },
             { id: "purificacao-agua", title: "Purificação de Água", cat: "Água", img: "/cursos/curso-purificacao-agua.webp" },
             { id: "mente-forte", title: "Mente Forte", cat: "Mentalidade", img: "/cursos/curso-mente-forte.webp" },
           ].map((c, i) => (
-            <Link key={c.id} to="/cursos" className="group block">
+            <Link key={c.id} to={`/cursos/${c.id}`} className="group block">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -214,10 +213,6 @@ const Index = () => {
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-                {/* "Em breve" overlay no canto superior */}
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-500/85 text-white backdrop-blur">
-                  Em breve
-                </span>
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/85 text-primary-foreground mb-1">
                     {c.cat}
@@ -238,9 +233,9 @@ const Index = () => {
         <div className="text-center mt-6">
           <Link
             to="/cursos"
-            className="inline-flex items-center gap-2 border border-primary text-primary font-heading tracking-wider uppercase px-6 py-2.5 rounded-md hover:bg-primary/10 transition-colors text-xs"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-6 py-2.5 rounded-md hover:opacity-90 transition-opacity text-xs"
           >
-            Ver catálogo completo <ChevronRight size={14} />
+            Ver todos os cursos <ChevronRight size={14} />
           </Link>
         </div>
       </Section>
