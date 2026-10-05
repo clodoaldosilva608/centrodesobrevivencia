@@ -389,6 +389,79 @@ export interface Database {
           updated_by: string | null;
         }>;
       };
+      course_prices: {
+        Row: {
+          course_id: string;
+          price_cents: number;
+          currency: string;
+          is_active: boolean;
+          promo_price_cents: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          course_id: string;
+          price_cents: number;
+          currency?: string;
+          is_active?: boolean;
+          promo_price_cents?: number | null;
+          updated_by?: string | null;
+        };
+        Update: Partial<{
+          price_cents: number;
+          currency: string;
+          is_active: boolean;
+          promo_price_cents: number | null;
+          updated_by: string | null;
+        }>;
+      };
+      course_purchases: {
+        Row: {
+          id: string;
+          user_id: string;
+          course_id: string;
+          amount_cents: number;
+          currency: string;
+          status: "pending" | "paid" | "refunded" | "expired" | "cancelled";
+          cakto_charge_id: string | null;
+          cakto_payment_url: string | null;
+          cakto_pix_qr_code: string | null;
+          cakto_pix_qr_image: string | null;
+          cakto_raw_response: Json | null;
+          created_at: string;
+          paid_at: string | null;
+          expires_at: string | null;
+          customer_name: string | null;
+          customer_email: string | null;
+          customer_document: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          course_id: string;
+          amount_cents: number;
+          currency?: string;
+          status?: "pending" | "paid" | "refunded" | "expired" | "cancelled";
+          cakto_charge_id?: string | null;
+          cakto_payment_url?: string | null;
+          cakto_pix_qr_code?: string | null;
+          cakto_pix_qr_image?: string | null;
+          cakto_raw_response?: Json | null;
+          paid_at?: string | null;
+          expires_at?: string | null;
+          customer_name?: string | null;
+          customer_email?: string | null;
+          customer_document?: string | null;
+        };
+        Update: Partial<{
+          status: "pending" | "paid" | "refunded" | "expired" | "cancelled";
+          cakto_charge_id: string | null;
+          cakto_payment_url: string | null;
+          cakto_pix_qr_code: string | null;
+          cakto_pix_qr_image: string | null;
+          paid_at: string | null;
+        }>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -396,6 +469,14 @@ export interface Database {
       mark_lesson_completed: {
         Args: { p_course_id: string; p_lesson_index: number };
         Returns: Database["public"]["Tables"]["course_enrollments"]["Row"];
+      };
+      is_course_paid: {
+        Args: { p_course_id: string };
+        Returns: boolean;
+      };
+      auto_enroll_after_payment: {
+        Args: { p_user_id: string; p_course_id: string };
+        Returns: void;
       };
     };
     Enums: {

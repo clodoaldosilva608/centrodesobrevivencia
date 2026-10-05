@@ -23,11 +23,19 @@ import {
   CircleCheck,
   Circle,
   Sparkles,
+  CreditCard,
+  QrCode,
+  Copy,
+  Timer,
+  AlertCircle,
 } from "lucide-react";
 import { getCourseById, getRelatedCourses } from "@/data/courses";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourseLessons } from "@/hooks/useCourseLessons";
 import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
+import { useCoursePurchase } from "@/hooks/useCoursePurchase";
+import { supabase } from "@/lib/supabase";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const LEVEL_STYLES: Record<string, string> = {
   Iniciante: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
@@ -65,6 +73,26 @@ const CursoDetalhe = () => {
     markLessonCompleted,
     setLastLesson,
   } = useCourseEnrollment(id, course?.lessons.length ?? 0);
+
+  // Estado de pagamento (Cakto)
+  const {
+    purchase,
+    isPaid,
+    loading: loadingPurchase,
+    creatingPayment,
+    error: paymentError,
+    createPayment,
+  } = useCoursePurchase(id);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pixData, setPixData] = useState<{
+    qr_code: string | null;
+    qr_image: string | null;
+    payment_url: string | null;
+    expires_at: string | null;
+    amount_cents: number;
+  } | null>(null);
+  const [priceInfo, setPriceInfo] = useState<{ price_cents: number; promo_price_cents: number | null } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Scroll to top on course change
   useEffect(() => {
@@ -106,34 +134,102 @@ const CursoDetalhe = () => {
   const isLessonCompleted = (idx: number) =>
     !!enrollment?.completed_lessons?.includes(idx);
   const isLessonUnlocked = (idx: number) => {
-    if (!isAuthenticated || !isEnrolled) return false;
+    if (!isAuthenticated || !effectiveEnrolled) return false;
     return true; // Todas as lições liberadas após matrícula
   };
 
+  // Carrega preço do curso (curso_prices)
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+    supabase
+      .from("course_prices")
+      .select("price_cents, promo_price_cents, is_active")
+      .eq("course_id", id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (mounted && data) {
+          setPriceInfo({
+            price_cents: data.price_cents,
+            promo_price_cents: data.promo_price_cents,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  // isEnrolled tem que considerar também isPaid (matrícula automática após pagamento)
+  const effectiveEnrolled = isEnrolled || isPaid;
+
   const handleEnroll = async () => {
     if (!isAuthenticated) {
-      toast.info("Faça login para se matricular");
+      toast.info("Faça login para comprar o curso");
       navigate("/login", { state: { from: `/cursos/${course.id}` } });
       return;
     }
+
+    // Se já pagou, mostra toast informativo
+    if (isPaid) {
+      toast.info("Você já comprou este curso");
+      return;
+    }
+
+    // Se curso tem preço > 0, abre fluxo de pagamento Cakto
+    if (priceInfo && priceInfo.price_cents > 0) {
+      const result = await createPayment();
+      if (result && (result.pix_qr_code || result.pix_qr_image || result.payment_url)) {
+        setPixData({
+          qr_code: result.pix_qr_code,
+          qr_image: result.pix_qr_image,
+          payment_url: result.payment_url,
+          expires_at: result.expires_at,
+          amount_cents: result.amount_cents,
+        });
+        setShowPaymentModal(true);
+        toast.success("Cobrança criada! Pague o PIX para liberar o curso.");
+      } else {
+        toast.error(paymentError || "Erro ao criar pagamento");
+      }
+      return;
+    }
+
+    // Curso gratuito: matricula direto
     setEnrolling(true);
-    const result = await enroll();
+    const enrollResult = await enroll();
     setEnrolling(false);
-    if (result.ok) {
+    if (enrollResult.ok) {
       toast.success("Matrícula confirmada! Acesse as lições abaixo.");
     } else {
-      toast.error(`Erro ao matricular: ${result.error ?? "tente novamente"}`);
+      toast.error(`Erro ao matricular: ${enrollResult.error ?? "tente novamente"}`);
     }
   };
 
+  const handleCopyPix = async () => {
+    if (!pixData?.qr_code) return;
+    try {
+      await navigator.clipboard.writeText(pixData.qr_code);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
+    }
+  };
+
+  const formatBRL = (cents: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+
   const handleLessonClick = async (idx: number) => {
-    if (!isAuthenticated || !isEnrolled) return;
+    if (!isAuthenticated || !effectiveEnrolled) return;
     setActiveLesson(idx);
     await setLastLesson(idx);
   };
 
   const handleMarkCompleted = async () => {
-    if (!isEnrolled || !lesson) return;
+    if (!effectiveEnrolled || !lesson) return;
     const result = await markLessonCompleted(activeLesson);
     if (result.ok) {
       toast.success("Lição concluída!");
@@ -214,9 +310,14 @@ const CursoDetalhe = () => {
               {course.instructor && (
                 <span className="flex items-center gap-1.5"><Users size={14} /> {course.instructor}</span>
               )}
-              {isEnrolled && (
+              {effectiveEnrolled && (
                 <span className="flex items-center gap-1.5 text-primary font-semibold">
-                  <CircleCheck size={14} /> Matriculado · {progressPercent}%
+                  <CircleCheck size={14} /> {isPaid ? 'Comprado' : 'Matriculado'} · {progressPercent}%
+                </span>
+              )}
+              {purchase && purchase.status === 'pending' && (
+                <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
+                  <Timer size={14} /> Pagamento pendente
                 </span>
               )}
             </div>
@@ -226,17 +327,19 @@ const CursoDetalhe = () => {
               {!isAuthenticated ? (
                 <Button asChild className="gap-2 uppercase tracking-wider text-xs h-11">
                   <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
-                    Entrar para matricular <ChevronRight size={14} />
+                    Entrar para comprar <ChevronRight size={14} />
                   </Link>
                 </Button>
-              ) : !isEnrolled ? (
+              ) : !effectiveEnrolled ? (
                 <Button
                   onClick={handleEnroll}
-                  disabled={enrolling || !enrollEnabled}
+                  disabled={enrolling || creatingPayment || loadingPurchase}
                   className="gap-2 uppercase tracking-wider text-xs h-11"
                 >
-                  {enrolling ? (
-                    <><Loader2 size={14} className="animate-spin" /> Matriculando...</>
+                  {enrolling || creatingPayment ? (
+                    <><Loader2 size={14} className="animate-spin" /> Processando...</>
+                  ) : priceInfo && priceInfo.price_cents > 0 ? (
+                    <><CreditCard size={14} /> Comprar — {formatBRL(priceInfo.promo_price_cents ?? priceInfo.price_cents)}</>
                   ) : (
                     <>Matricular agora <ChevronRight size={14} /></>
                   )}
@@ -262,7 +365,7 @@ const CursoDetalhe = () => {
       </section>
 
       {/* ========================= VIDEO PLAYER (matriculados) ========================= */}
-      {isEnrolled && lessonsEnabled && lesson && (
+      {effectiveEnrolled && lessonsEnabled && lesson && (
         <section className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -395,7 +498,7 @@ const CursoDetalhe = () => {
                   const unlocked = isLessonUnlocked(idx);
                   const isPreview = !!lessonMeta?.is_preview;
                   const isFreeAccess = isPreview || unlocked;
-                  const isActive = idx === activeLesson && isEnrolled;
+                  const isActive = idx === activeLesson && effectiveEnrolled;
                   return (
                     <button
                       key={idx}
@@ -471,7 +574,7 @@ const CursoDetalhe = () => {
               </dl>
 
               {/* Progress bar (se matriculado) */}
-              {isEnrolled && (
+              {effectiveEnrolled && (
                 <div className="mt-5 pt-5 border-t border-border">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-muted-foreground">Seu progresso</span>
@@ -493,17 +596,19 @@ const CursoDetalhe = () => {
                 {!isAuthenticated ? (
                   <Button asChild className="w-full gap-2 uppercase tracking-wider text-xs h-11">
                     <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
-                      Entrar para matricular <ChevronRight size={14} />
+                      Entrar para comprar <ChevronRight size={14} />
                     </Link>
                   </Button>
-                ) : !isEnrolled ? (
+                ) : !effectiveEnrolled ? (
                   <Button
                     onClick={handleEnroll}
-                    disabled={enrolling || !enrollEnabled}
+                    disabled={enrolling || creatingPayment || loadingPurchase}
                     className="w-full gap-2 uppercase tracking-wider text-xs h-11"
                   >
-                    {enrolling ? (
-                      <><Loader2 size={14} className="animate-spin" /> Matriculando...</>
+                    {enrolling || creatingPayment ? (
+                      <><Loader2 size={14} className="animate-spin" /> Processando...</>
+                    ) : priceInfo && priceInfo.price_cents > 0 ? (
+                      <><CreditCard size={14} /> Comprar — {formatBRL(priceInfo.promo_price_cents ?? priceInfo.price_cents)}</>
                     ) : (
                       <>Matricular <ChevronRight size={14} /></>
                     )}
@@ -515,7 +620,7 @@ const CursoDetalhe = () => {
                 )}
                 <p className="text-[11px] text-muted-foreground text-center">
                   <Lock size={10} className="inline mr-1" />
-                  {isEnrolled ? "Acesso liberado" : "Acesso após matrícula"}
+                  {effectiveEnrolled ? "Acesso liberado" : "Acesso após pagamento"}
                 </p>
               </div>
             </div>
@@ -599,6 +704,113 @@ const CursoDetalhe = () => {
           </div>
         </section>
       )}
+
+      {/* ========================= MODAL DE PAGAMENTO PIX ========================= */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading uppercase tracking-wider text-foreground flex items-center gap-2">
+              <QrCode size={18} className="text-primary" /> Pagamento PIX
+            </DialogTitle>
+            <DialogDescription>
+              Pague o PIX abaixo para liberar o curso <strong>{course.title}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pixData && (
+            <div className="space-y-4 py-2">
+              {/* Valor */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Valor</p>
+                <p className="font-heading text-2xl text-foreground mt-1">
+                  {formatBRL(pixData.amount_cents)}
+                </p>
+              </div>
+
+              {/* QR Code */}
+              {pixData.qr_image ? (
+                <div className="flex justify-center">
+                  <img
+                    src={pixData.qr_image}
+                    alt="QR Code PIX"
+                    className="w-48 h-48 border border-border rounded-lg"
+                  />
+                </div>
+              ) : pixData.payment_url ? (
+                <div className="text-center">
+                  <Button asChild className="gap-2 w-full">
+                    <a href={pixData.payment_url} target="_blank" rel="noreferrer">
+                      <ExternalLink size={14} /> Abrir página de pagamento
+                    </a>
+                  </Button>
+                </div>
+              ) : null}
+
+              {/* Código copia e cola */}
+              {pixData.qr_code && (
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                      PIX copia e cola
+                    </span>
+                    <button
+                      onClick={handleCopyPix}
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      {copied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-foreground/70 break-all font-mono">
+                    {pixData.qr_code}
+                  </p>
+                </div>
+              )}
+
+              {/* Expiração */}
+              {pixData.expires_at && (
+                <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                  <Timer size={12} />
+                  <span>
+                    Expira em: <strong>{new Date(pixData.expires_at).toLocaleString("pt-BR")}</strong>
+                  </span>
+                </div>
+              )}
+
+              {/* Status */}
+              {purchase?.status === 'pending' && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-center">
+                  <Loader2 size={16} className="mx-auto mb-2 animate-spin text-amber-600" />
+                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Aguardando confirmação do pagamento...
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Atualiza automaticamente quando o PIX for pago.
+                  </p>
+                </div>
+              )}
+
+              {purchase?.status === 'paid' && (
+                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-center">
+                  <Check size={20} className="mx-auto mb-1 text-emerald-600" />
+                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    Pagamento confirmado!
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Curso liberado. Feche esta janela para assistir.
+                  </p>
+                </div>
+              )}
+
+              {paymentError && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-center">
+                  <AlertCircle size={16} className="mx-auto mb-1 text-destructive" />
+                  <p className="text-xs text-destructive">{paymentError}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

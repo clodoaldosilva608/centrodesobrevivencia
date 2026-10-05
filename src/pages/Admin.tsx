@@ -3264,6 +3264,8 @@ interface LessonRow {
   duration_minutes: number;
   is_preview: boolean;
   updated_at: string;
+  channel_name?: string | null;
+  channel_url?: string | null;
 }
 
 interface EnrollmentRow {
@@ -3278,10 +3280,13 @@ interface EnrollmentRow {
 }
 
 function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
-  const [activeTab, setActiveTab] = useState<"lessons" | "enrollments" | "migration">("lessons");
+  const [activeTab, setActiveTab] = useState<"lessons" | "enrollments" | "migration" | "prices" | "purchases" | "channels">("lessons");
   const [selectedCourse, setSelectedCourse] = useState<string>(COURSES[0]?.id ?? "");
   const [lessons, setLessons] = useState<LessonRow[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [prices, setPrices] = useState<{ course_id: string; price_cents: number; promo_price_cents: number | null; is_active: boolean; currency: string }[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [editing, setEditing] = useState<LessonRow | null>(null);
@@ -3377,10 +3382,83 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
     }
   }, []);
 
+  // Load all course prices
+  const loadPrices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("course_prices")
+        .select("*")
+        .order("course_id");
+      if (error) {
+        setEnabled(false);
+        setPrices([]);
+      } else {
+        setEnabled(true);
+        setPrices(data ?? []);
+      }
+    } catch {
+      setEnabled(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load all purchases (admin only)
+  const loadPurchases = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("course_purchases")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) {
+        setEnabled(false);
+        setPurchases([]);
+      } else {
+        setEnabled(true);
+        setPurchases(data ?? []);
+      }
+    } catch {
+      setEnabled(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Save price (upsert)
+  const savePrice = async (courseId: string, priceCents: number, promoPriceCents: number | null, isActive: boolean) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+      const { error } = await supabase
+        .from("course_prices")
+        .upsert({
+          course_id: courseId,
+          price_cents: priceCents,
+          promo_price_cents: promoPriceCents,
+          is_active: isActive,
+          currency: "BRL",
+          updated_by: userId,
+        });
+      if (error) throw error;
+      toast.success("Preço salvo!");
+      setEditingPrice(null);
+      loadPrices();
+      onCountsChanged?.();
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "lessons") loadLessons(selectedCourse);
     else if (activeTab === "enrollments") loadEnrollments();
-  }, [activeTab, selectedCourse, loadLessons, loadEnrollments]);
+    else if (activeTab === "prices") loadPrices();
+    else if (activeTab === "purchases") loadPurchases();
+    else if (activeTab === "channels") loadLessons(selectedCourse);
+  }, [activeTab, selectedCourse, loadLessons, loadEnrollments, loadPrices, loadPurchases]);
 
   // Save lesson (create or update)
   const saveLesson = async (form: Partial<LessonRow> & { course_id: string; lesson_index: number }) => {
@@ -3555,6 +3633,30 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
           }`}
         >
           Matrículas
+        </button>
+        <button
+          onClick={() => setActiveTab("prices")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wider transition-colors ${
+            activeTab === "prices" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Preços
+        </button>
+        <button
+          onClick={() => setActiveTab("purchases")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wider transition-colors ${
+            activeTab === "purchases" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Compras
+        </button>
+        <button
+          onClick={() => setActiveTab("channels")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wider transition-colors ${
+            activeTab === "channels" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Canais
         </button>
       </div>
 
@@ -3755,6 +3857,231 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
         </div>
       )}
 
+      {/* Prices tab — CRUD para course_prices */}
+      {activeTab === "prices" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="outline" size="sm" onClick={loadPrices} className="gap-1 text-xs h-8">
+              <RefreshCw size={12} /> Recarregar
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {prices.length} preços cadastrados · 11 cursos no catálogo
+            </span>
+          </div>
+
+          {!enabled && !loading && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+              <AlertCircle size={28} className="mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">Tabela course_prices não existe</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Veja as instruções de setup no topo desta seção.
+              </p>
+            </div>
+          )}
+
+          {enabled && !loading && (
+            <TableShell>
+              <thead>
+                <tr className="border-b border-border">
+                  <Th>Curso</Th>
+                  <Th>Preço</Th>
+                  <Th>Promo</Th>
+                  <Th>Status</Th>
+                  <Th>Ações</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {COURSES.map((c) => {
+                  const p = prices.find((pr) => pr.course_id === c.id);
+                  return (
+                    <tr key={c.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-3 text-sm text-foreground">
+                        {c.title}
+                        <div className="text-[10px] text-muted-foreground">{c.id}</div>
+                      </td>
+                      <td className="p-3 text-sm text-foreground font-mono">
+                        {p ? formatBRL(p.price_cents) : "—"}
+                      </td>
+                      <td className="p-3 text-sm text-foreground font-mono">
+                        {p?.promo_price_cents ? formatBRL(p.promo_price_cents) : "—"}
+                      </td>
+                      <td className="p-3">
+                        {p?.is_active ? (
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Ativo</span>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Inativo</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <button onClick={() => setEditingPrice(c.id)} className="p-1.5 rounded hover:bg-muted" title="Editar preço">
+                          <Pencil size={12} className="text-foreground" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </TableShell>
+          )}
+          {loading && <Loader label="Carregando preços..." />}
+
+          {editingPrice && (
+            <PriceEditDialog
+              courseId={editingPrice}
+              currentPrice={prices.find((p) => p.course_id === editingPrice)}
+              onCancel={() => setEditingPrice(null)}
+              onSave={savePrice}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Purchases tab — histórico de compras */}
+      {activeTab === "purchases" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="outline" size="sm" onClick={loadPurchases} className="gap-1 text-xs h-8">
+              <RefreshCw size={12} /> Recarregar
+            </Button>
+            <span className="text-xs text-muted-foreground">{purchases.length} compras</span>
+          </div>
+
+          {!enabled && !loading && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+              <AlertCircle size={28} className="mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">Tabela course_purchases não existe</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Veja as instruções de setup no topo desta seção.
+              </p>
+            </div>
+          )}
+
+          {enabled && !loading && (
+            <TableShell>
+              <thead>
+                <tr className="border-b border-border">
+                  <Th>Cliente</Th>
+                  <Th>Curso</Th>
+                  <Th>Valor</Th>
+                  <Th>Status</Th>
+                  <Th>Criado</Th>
+                  <Th>Pago em</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map((p) => {
+                  const course = COURSES.find((c) => c.id === p.course_id);
+                  return (
+                    <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-3 text-sm text-foreground">
+                        {p.customer_name || "—"}
+                        <div className="text-[10px] text-muted-foreground">{p.customer_email || p.user_id.slice(0, 8)}</div>
+                      </td>
+                      <td className="p-3 text-sm text-foreground">{course?.title || p.course_id}</td>
+                      <td className="p-3 text-sm font-mono">{formatBRL(p.amount_cents)}</td>
+                      <td className="p-3">
+                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                          p.status === 'paid' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                          p.status === 'pending' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' :
+                          p.status === 'expired' ? 'bg-muted text-muted-foreground' :
+                          'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                        }`}>
+                          {p.status === 'paid' ? 'Pago' : p.status === 'pending' ? 'Pendente' : p.status === 'expired' ? 'Expirado' : p.status === 'refunded' ? 'Estornado' : 'Cancelado'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{formatDate(p.created_at)}</td>
+                      <td className="p-3 text-xs text-muted-foreground">{p.paid_at ? formatDate(p.paid_at) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </TableShell>
+          )}
+
+          {enabled && !loading && purchases.length === 0 && (
+            <EmptyState message="Nenhuma compra ainda. Quando clientes pagarem, aparecem aqui." />
+          )}
+
+          {loading && <Loader label="Carregando compras..." />}
+        </div>
+      )}
+
+      {/* Channels tab — info de canal YouTube por lição */}
+      {activeTab === "channels" && (
+        <div className="space-y-4">
+          {/* Course selector */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Curso:</label>
+            <select
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              className="bg-background border border-input rounded-md px-3 py-1.5 text-sm text-foreground"
+            >
+              {COURSES.map((c) => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadLessons(selectedCourse)}
+              className="gap-1 text-xs h-8"
+            >
+              <RefreshCw size={12} /> Recarregar
+            </Button>
+          </div>
+
+          {!enabled && !loading && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+              <AlertCircle size={28} className="mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">Tabela course_lessons não existe</p>
+            </div>
+          )}
+
+          {enabled && !loading && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                {lessons.length} lições cadastradas · {lessons.filter((l) => l.channel_name).length} com canal identificado
+              </p>
+              <TableShell>
+                <thead>
+                  <tr className="border-b border-border">
+                    <Th>#</Th>
+                    <Th>Título</Th>
+                    <Th>Canal do YouTube</Th>
+                    <Th>Vídeo URL</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lessons.map((l, i) => (
+                    <tr key={l.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-3 text-xs">{i + 1}</td>
+                      <td className="p-3 text-sm text-foreground">{l.title}</td>
+                      <td className="p-3 text-sm">
+                        {l.channel_url ? (
+                          <a href={l.channel_url} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                            <ExternalLink size={10} /> {l.channel_name || "Ver canal"}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{l.channel_name || "—"}</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-xs truncate">
+                        <a href={l.video_url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                          <ExternalLink size={10} /> {l.video_url}
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableShell>
+              {lessons.length === 0 && <EmptyState message="Nenhuma lição cadastrada neste curso." />}
+            </>
+          )}
+          {loading && <Loader label="Carregando canais..." />}
+        </div>
+      )}
+
       {/* Edit/Create dialog */}
       {editing && (
         <LessonEditDialog
@@ -3838,6 +4165,81 @@ function LessonEditDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function PriceEditDialog({
+  courseId,
+  currentPrice,
+  onCancel,
+  onSave,
+}: {
+  courseId: string;
+  currentPrice?: { price_cents: number; promo_price_cents: number | null; is_active: boolean };
+  onCancel: () => void;
+  onSave: (courseId: string, priceCents: number, promoPriceCents: number | null, isActive: boolean) => void;
+}) {
+  const course = COURSES.find((c) => c.id === courseId);
+  const [priceReais, setPriceReais] = useState<string>(
+    currentPrice ? (currentPrice.price_cents / 100).toFixed(2).replace(".", ",") : "97,00"
+  );
+  const [promoReais, setPromoReais] = useState<string>(
+    currentPrice?.promo_price_cents ? (currentPrice.promo_price_cents / 100).toFixed(2).replace(".", ",") : ""
+  );
+  const [isActive, setIsActive] = useState(currentPrice?.is_active ?? true);
+
+  const parseCents = (s: string): number => {
+    if (!s.trim()) return 0;
+    // aceita "97,00" ou "97.00" ou "97"
+    const normalized = s.replace(/\./g, "").replace(/,/g, ".");
+    const val = parseFloat(normalized);
+    if (isNaN(val)) return 0;
+    return Math.round(val * 100);
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar preço — {course?.title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <Field label="Preço (R$)">
+            <Input
+              value={priceReais}
+              onChange={(e) => setPriceReais(e.target.value)}
+              placeholder="97,00"
+            />
+          </Field>
+          <Field label="Preço promocional (opcional)">
+            <Input
+              value={promoReais}
+              onChange={(e) => setPromoReais(e.target.value)}
+              placeholder="47,00"
+            />
+          </Field>
+          <SwitchField label="Curso à venda (ativo)" checked={isActive} onChange={setIsActive} />
+          <div className="rounded-lg bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
+            Valor final: <strong className="text-foreground font-mono">
+              R$ {(parseCents(promoReais) || parseCents(priceReais) || 0) / 100}
+            </strong>
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onCancel}>Cancelar</Button>
+          <Button
+            onClick={() => onSave(courseId, parseCents(priceReais), promoReais.trim() ? parseCents(promoReais) : null, isActive)}
+          >
+            Salvar preço
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// helper BRL formatting (usado em várias tabs)
+function formatBRL(cents: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
 // ─── Sidebar ────────────────────────────────────────────────────────────────
