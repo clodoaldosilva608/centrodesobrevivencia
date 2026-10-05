@@ -16,9 +16,9 @@
  *   - CAKTO_WEBHOOK_SECRET: segredo para validar assinatura
  *   - SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
  */
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
@@ -52,16 +52,6 @@ module.exports = async (req, res) => {
     const payload = req.body || {};
     console.log('[cakto-webhook] Payload:', JSON.stringify(payload).slice(0, 500));
 
-    // Estrutura esperada do webhook Cakto:
-    // {
-    //   "id": "charge_xxx",
-    //   "external_reference": "user_id:course_id",
-    //   "status": "paid",  // paid | expired | refunded
-    //   "amount": 9700,
-    //   "currency": "BRL",
-    //   "payment_method": "pix",
-    //   "paid_at": "2025-01-15T10:30:00Z"
-    // }
     const chargeId = payload.id || payload.charge_id || payload.transaction_id;
     const externalRef = payload.external_reference || '';
     const status = (payload.status || '').toLowerCase();

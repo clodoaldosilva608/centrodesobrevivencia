@@ -22,7 +22,7 @@
  *   - SUPABASE_SERVICE_ROLE_KEY: service role (para escrever purchases)
  *   - APP_URL: URL pública do app (ex: https://centrodesobrevivencia.vercel.app)
  */
-module.exports = async (req, res) => {
+export default async (req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -90,30 +90,21 @@ module.exports = async (req, res) => {
     }
 
     // === 3. Criar cobrança no Cakto ===
-    // Documentação Cakto: https://docs.cakto.com.br
-    // Endpoint: POST /v1/transactions (PIX)
-    // Body: { amount, description, customer: { name, email, document }, webhook_url, ... }
     const courseTitle = course_id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const webhookUrl = `${APP_URL}/api/cakto-webhook`;
 
     const caktoBody = {
-      amount: amountCents,           // em centavos
+      amount: amountCents,
       currency: 'BRL',
       payment_method: 'pix',
       description: `Curso: ${courseTitle}`,
-      external_reference: `${user.id}:${course_id}`,  // para identificar no webhook
+      external_reference: `${user.id}:${course_id}`,
       webhook_url: webhookUrl,
       customer: {
         name: profile.full_name || (user.email ? user.email.split('@')[0] : 'Cliente'),
         email: user.email || profile.email,
-        // document: opcional — se fornecido, ajuda em PDFs fiscais
       },
-      metadata: {
-        course_id,
-        user_id: user.id,
-        platform: 'centro-de-sobrevivencia',
-      },
-      // Redirecionamento após pagamento bem-sucedido
+      metadata: { course_id, user_id: user.id, platform: 'centro-de-sobrevivencia' },
       success_url: `${APP_URL}/pagamento/sucesso?course_id=${course_id}`,
       failure_url: `${APP_URL}/cursos/${course_id}`,
     };
@@ -138,8 +129,6 @@ module.exports = async (req, res) => {
     }
 
     const caktoData = await caktoRes.json();
-    // Estrutura esperada: { id, status, payment: { pix_qr_code, pix_qr_image, payment_url, expires_at } }
-    // (nome dos campos depende do Cakto real — ajustar conforme documentação)
     const chargeId = caktoData.id || caktoData.charge_id || caktoData.transaction_id;
     const paymentUrl = caktoData.payment_url || caktoData.checkout_url || caktoData.payment?.payment_url;
     const pixQrCode = caktoData.pix_qr_code || caktoData.payment?.pix_qr_code || caktoData.qr_code;
@@ -184,9 +173,9 @@ module.exports = async (req, res) => {
       charge_id: chargeId,
       amount_cents: amountCents,
       currency: priceData.currency || 'BRL',
-      pix_qr_code: pixQrCode,        // código "copia e cola"
-      pix_qr_image: pixQrImage,      // URL da imagem do QR
-      payment_url: paymentUrl,      // URL alternativa (checkout)
+      pix_qr_code: pixQrCode,
+      pix_qr_image: pixQrImage,
+      payment_url: paymentUrl,
       expires_at: expiresAt,
       status: 'pending',
     });
@@ -196,3 +185,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Erro interno', message: err.message });
   }
 };
+
