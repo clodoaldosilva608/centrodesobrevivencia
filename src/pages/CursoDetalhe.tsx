@@ -1,9 +1,10 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Clock,
   Layers,
@@ -18,8 +19,15 @@ import {
   Flame,
   BookOpen,
   ArrowRight,
+  Loader2,
+  CircleCheck,
+  Circle,
+  Sparkles,
 } from "lucide-react";
-import { getCourseById, getRelatedCourses, COURSES } from "@/data/courses";
+import { getCourseById, getRelatedCourses } from "@/data/courses";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCourseLessons } from "@/hooks/useCourseLessons";
+import { useCourseEnrollment } from "@/hooks/useCourseEnrollment";
 
 const LEVEL_STYLES: Record<string, string> = {
   Iniciante: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
@@ -27,15 +35,48 @@ const LEVEL_STYLES: Record<string, string> = {
   Avançado: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
 };
 
+/** Converte qualquer URL de vídeo (YouTube watch, youtu.be, Vimeo, mp4) em URL embeddable. */
+function toEmbedUrl(url: string): string {
+  if (!url) return "";
+  // YouTube watch?v=ID
+  const ytWatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  if (ytWatch) return `https://www.youtube.com/embed/${ytWatch[1]}`;
+  // Vimeo
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return url; // Assume URL já embeddable (mp4 direto, etc.)
+}
+
 const CursoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const course = id ? getCourseById(id) : undefined;
+  const [activeLesson, setActiveLesson] = useState<number>(0);
+  const [enrolling, setEnrolling] = useState(false);
+
+  const { lessons, enabled: lessonsEnabled } = useCourseLessons(id);
+  const {
+    enrollment,
+    isEnrolled,
+    enabled: enrollEnabled,
+    progressPercent,
+    enroll,
+    markLessonCompleted,
+    setLastLesson,
+  } = useCourseEnrollment(id, course?.lessons.length ?? 0);
 
   // Scroll to top on course change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
+
+  // Quando matrícula carrega, jump para última lição acessada
+  useEffect(() => {
+    if (enrollment && typeof enrollment.last_lesson_index === "number") {
+      setActiveLesson(enrollment.last_lesson_index);
+    }
+  }, [enrollment]);
 
   // 404 fallback
   if (!course) {
@@ -61,6 +102,49 @@ const CursoDetalhe = () => {
 
   const related = getRelatedCourses(course, 3);
   const levelClass = LEVEL_STYLES[course.level] ?? "";
+  const lesson = lessons[activeLesson] ?? null;
+  const isLessonCompleted = (idx: number) =>
+    !!enrollment?.completed_lessons?.includes(idx);
+  const isLessonUnlocked = (idx: number) => {
+    if (!isAuthenticated || !isEnrolled) return false;
+    return true; // Todas as lições liberadas após matrícula
+  };
+
+  const handleEnroll = async () => {
+    if (!isAuthenticated) {
+      toast.info("Faça login para se matricular");
+      navigate("/login", { state: { from: `/cursos/${course.id}` } });
+      return;
+    }
+    setEnrolling(true);
+    const result = await enroll();
+    setEnrolling(false);
+    if (result.ok) {
+      toast.success("Matrícula confirmada! Acesse as lições abaixo.");
+    } else {
+      toast.error(`Erro ao matricular: ${result.error ?? "tente novamente"}`);
+    }
+  };
+
+  const handleLessonClick = async (idx: number) => {
+    if (!isAuthenticated || !isEnrolled) return;
+    setActiveLesson(idx);
+    await setLastLesson(idx);
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!isEnrolled || !lesson) return;
+    const result = await markLessonCompleted(activeLesson);
+    if (result.ok) {
+      toast.success("Lição concluída!");
+      // Avança para próxima lição se houver
+      if (activeLesson < course.lessons.length - 1) {
+        setActiveLesson(activeLesson + 1);
+      }
+    } else {
+      toast.error(`Erro: ${result.error}`);
+    }
+  };
 
   return (
     <Layout>
@@ -71,7 +155,7 @@ const CursoDetalhe = () => {
       />
 
       {/* ========================= HERO ========================= */}
-      <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-end overflow-hidden">
+      <section className="relative min-h-[60vh] md:min-h-[70vh] flex items-end overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={course.image}
@@ -130,15 +214,41 @@ const CursoDetalhe = () => {
               {course.instructor && (
                 <span className="flex items-center gap-1.5"><Users size={14} /> {course.instructor}</span>
               )}
+              {isEnrolled && (
+                <span className="flex items-center gap-1.5 text-primary font-semibold">
+                  <CircleCheck size={14} /> Matriculado · {progressPercent}%
+                </span>
+              )}
             </div>
 
             {/* CTAs */}
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild className="gap-2 uppercase tracking-wider text-xs h-11">
-                <Link to="/login">
-                  Matricular agora <ChevronRight size={14} />
-                </Link>
-              </Button>
+              {!isAuthenticated ? (
+                <Button asChild className="gap-2 uppercase tracking-wider text-xs h-11">
+                  <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
+                    Entrar para matricular <ChevronRight size={14} />
+                  </Link>
+                </Button>
+              ) : !isEnrolled ? (
+                <Button
+                  onClick={handleEnroll}
+                  disabled={enrolling || !enrollEnabled}
+                  className="gap-2 uppercase tracking-wider text-xs h-11"
+                >
+                  {enrolling ? (
+                    <><Loader2 size={14} className="animate-spin" /> Matriculando...</>
+                  ) : (
+                    <>Matricular agora <ChevronRight size={14} /></>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate("/perfil/meus-cursos")}
+                  className="gap-2 uppercase tracking-wider text-xs h-11"
+                >
+                  Ver meus cursos <ChevronRight size={14} />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => navigate("/cursos")}
@@ -151,23 +261,67 @@ const CursoDetalhe = () => {
         </div>
       </section>
 
+      {/* ========================= VIDEO PLAYER (matriculados) ========================= */}
+      {isEnrolled && lessonsEnabled && lesson && (
+        <section className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border overflow-hidden bg-card"
+          >
+            {/* Player */}
+            <div className="aspect-video bg-black">
+              <iframe
+                src={toEmbedUrl(lesson.video_url)}
+                title={lesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+            {/* Player meta */}
+            <div className="p-5 md:p-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                    Módulo {activeLesson + 1} de {course.lessons.length}
+                  </p>
+                  <h2 className="font-heading text-lg md:text-xl text-foreground tracking-wide">
+                    {lesson.title}
+                  </h2>
+                </div>
+                <Button
+                  onClick={handleMarkCompleted}
+                  disabled={isLessonCompleted(activeLesson)}
+                  variant={isLessonCompleted(activeLesson) ? "secondary" : "default"}
+                  className="gap-2 uppercase tracking-wider text-xs"
+                >
+                  {isLessonCompleted(activeLesson) ? (
+                    <><Check size={14} /> Concluída</>
+                  ) : (
+                    <><CircleCheck size={14} /> Marcar como concluída</>
+                  )}
+                </Button>
+              </div>
+              {lesson.description && (
+                <p className="mt-3 text-sm text-foreground/80 leading-relaxed">{lesson.description}</p>
+              )}
+            </div>
+          </motion.div>
+        </section>
+      )}
+
       {/* ========================= BODY ========================= */}
       <section className="container mx-auto px-4 py-12 md:py-16 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Left column — main content */}
+          {/* Left column */}
           <div className="lg:col-span-2 space-y-12">
             {/* Description */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
+            <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <h2 className="font-heading text-xl md:text-2xl tracking-wider uppercase text-foreground mb-4 flex items-center gap-2">
                 <BookOpen size={18} className="text-primary" /> Sobre o curso
               </h2>
-              <p className="text-sm md:text-base text-foreground/85 leading-relaxed">
-                {course.description}
-              </p>
+              <p className="text-sm md:text-base text-foreground/85 leading-relaxed">{course.description}</p>
               {course.longDescription && (
                 <p className="mt-4 text-sm md:text-base text-foreground/80 leading-relaxed">
                   {course.longDescription}
@@ -175,7 +329,7 @@ const CursoDetalhe = () => {
               )}
             </motion.div>
 
-            {/* Atmospheric image (only for courses that have one) */}
+            {/* Atmospheric image */}
             {course.atmosphericImage && (
               <motion.figure
                 initial={{ opacity: 0, y: 12 }}
@@ -195,20 +349,14 @@ const CursoDetalhe = () => {
                   <p className="font-heading text-base md:text-lg uppercase tracking-wider text-foreground flex items-center gap-2">
                     <Flame size={16} className="text-primary" /> Prática em condições reais
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Conteúdo aplicado em campo — não só teoria.
-                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Conteúdo aplicado em campo — não só teoria.</p>
                 </figcaption>
               </motion.figure>
             )}
 
             {/* What you'll learn */}
             {course.learn && course.learn.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
+              <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                 <h2 className="font-heading text-xl md:text-2xl tracking-wider uppercase text-foreground mb-4 flex items-center gap-2">
                   <Target size={18} className="text-primary" /> O que você vai aprender
                 </h2>
@@ -225,33 +373,71 @@ const CursoDetalhe = () => {
               </motion.div>
             )}
 
-            {/* Modules */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
+            {/* Modules list */}
+            <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <h2 className="font-heading text-xl md:text-2xl tracking-wider uppercase text-foreground mb-4 flex items-center gap-2">
-                <Layers size={18} className="text-primary" /> Módulos do curso
+                <Layers size={18} className="text-primary" /> Conteúdo do curso
               </h2>
+              {!lessonsEnabled ? (
+                <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-5 text-center">
+                  <Sparkles size={28} className="mx-auto text-primary mb-2" />
+                  <p className="font-medium text-foreground">Vídeo-aulas em breve</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    As lições já estão listadas abaixo. Em breve você poderá assistir aqui mesmo.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="space-y-2">
-                {course.lessons.map((lesson, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3.5 rounded-lg border border-border bg-card hover:border-primary/40 transition-colors"
-                  >
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary/15 text-primary text-sm font-bold flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{lesson}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Módulo {idx + 1} de {course.lessons.length} · ~{Math.ceil(course.hours * 60 / course.lessons.length)} min
-                      </p>
-                    </div>
-                    <Lock size={14} className="text-muted-foreground flex-shrink-0" />
-                  </div>
-                ))}
+                {course.lessons.map((lessonTitle, idx) => {
+                  const lessonMeta = lessons.find((l) => l.lesson_index === idx);
+                  const completed = isLessonCompleted(idx);
+                  const unlocked = isLessonUnlocked(idx);
+                  const isPreview = !!lessonMeta?.is_preview;
+                  const isFreeAccess = isPreview || unlocked;
+                  const isActive = idx === activeLesson && isEnrolled;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => isFreeAccess && handleLessonClick(idx)}
+                      disabled={!isFreeAccess}
+                      className={`w-full text-left flex items-center gap-3 p-3.5 rounded-lg border transition-colors ${
+                        isActive
+                          ? "border-primary bg-primary/5"
+                          : completed
+                          ? "border-primary/30 bg-primary/5"
+                          : isFreeAccess
+                          ? "border-border bg-card hover:border-primary/40"
+                          : "border-border bg-muted/30 opacity-70 cursor-not-allowed"
+                      }`}
+                    >
+                      <span className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
+                        completed ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {completed ? <Check size={14} /> : <span className="text-xs font-bold">{idx + 1}</span>}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{lessonTitle}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                          <span>Módulo {idx + 1} de {course.lessons.length}</span>
+                          {lessonMeta?.duration_minutes ? (
+                            <span className="flex items-center gap-1"><Clock size={10} /> {lessonMeta.duration_minutes} min</span>
+                          ) : null}
+                          {isPreview && (
+                            <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">
+                              Grátis
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {isFreeAccess ? (
+                        <PlayCircle size={16} className="text-primary flex-shrink-0" />
+                      ) : (
+                        <Lock size={14} className="text-muted-foreground flex-shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -263,7 +449,6 @@ const CursoDetalhe = () => {
               <h3 className="font-heading text-base tracking-wider uppercase text-foreground mb-4">
                 Resumo do curso
               </h3>
-
               <dl className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground flex items-center gap-1.5"><Layers size={12} /> Módulos</dt>
@@ -285,15 +470,52 @@ const CursoDetalhe = () => {
                 )}
               </dl>
 
+              {/* Progress bar (se matriculado) */}
+              {isEnrolled && (
+                <div className="mt-5 pt-5 border-t border-border">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Seu progresso</span>
+                    <span className="font-bold text-primary">{progressPercent}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {enrollment?.completed_lessons.length ?? 0} de {course.lessons.length} lições concluídas
+                  </p>
+                </div>
+              )}
+
               <div className="mt-6 pt-6 border-t border-border space-y-3">
-                <Button asChild className="w-full gap-2 uppercase tracking-wider text-xs h-11">
-                  <Link to="/login">
-                    Matricular <ChevronRight size={14} />
-                  </Link>
-                </Button>
+                {!isAuthenticated ? (
+                  <Button asChild className="w-full gap-2 uppercase tracking-wider text-xs h-11">
+                    <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
+                      Entrar para matricular <ChevronRight size={14} />
+                    </Link>
+                  </Button>
+                ) : !isEnrolled ? (
+                  <Button
+                    onClick={handleEnroll}
+                    disabled={enrolling || !enrollEnabled}
+                    className="w-full gap-2 uppercase tracking-wider text-xs h-11"
+                  >
+                    {enrolling ? (
+                      <><Loader2 size={14} className="animate-spin" /> Matriculando...</>
+                    ) : (
+                      <>Matricular <ChevronRight size={14} /></>
+                    )}
+                  </Button>
+                ) : (
+                  <Button asChild className="w-full gap-2 uppercase tracking-wider text-xs h-11">
+                    <Link to="/perfil/meus-cursos">Ver meus cursos</Link>
+                  </Button>
+                )}
                 <p className="text-[11px] text-muted-foreground text-center">
                   <Lock size={10} className="inline mr-1" />
-                  Acesso liberado após matrícula
+                  {isEnrolled ? "Acesso liberado" : "Acesso após matrícula"}
                 </p>
               </div>
             </div>
@@ -302,7 +524,7 @@ const CursoDetalhe = () => {
             {course.audience && (
               <div className="rounded-2xl border border-border bg-muted/30 p-5">
                 <h3 className="font-heading text-sm tracking-wider uppercase text-foreground mb-2 flex items-center gap-2">
-                  <Users size={14} className="text-primary" /> Para quem é este curso
+                  <Users size={14} className="text-primary" /> Para quem é
                 </h3>
                 <p className="text-xs text-foreground/80 leading-relaxed">{course.audience}</p>
               </div>
@@ -336,9 +558,7 @@ const CursoDetalhe = () => {
               <h2 className="font-heading text-2xl md:text-3xl tracking-wider uppercase text-foreground">
                 Cursos relacionados
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Continue sua trilha de aprendizado
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Continue sua trilha de aprendizado</p>
               <div className="mt-4 w-16 h-1 bg-primary mx-auto rounded-full" />
             </div>
 
@@ -353,13 +573,7 @@ const CursoDetalhe = () => {
                     className="relative overflow-hidden rounded-xl border border-border bg-card hover:border-primary/50 transition-colors"
                   >
                     <div className="aspect-[4/5] overflow-hidden">
-                      <img
-                        src={rc.image}
-                        alt={rc.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                      <img src={rc.image} alt={rc.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-4">
@@ -367,9 +581,7 @@ const CursoDetalhe = () => {
                         {rc.category}
                       </span>
                       <h3 className="text-sm font-medium text-foreground line-clamp-2">{rc.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {rc.modules} módulos · {rc.hours}h
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{rc.modules} módulos · {rc.hours}h</p>
                     </div>
                   </motion.div>
                 </Link>

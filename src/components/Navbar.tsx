@@ -30,6 +30,7 @@ const navItems: NavItem[] = [
   { label: "Visão OSIRIS", path: "/visao-osiris", highlight: true },
   { label: "Desafios", path: "/desafios" },
   { label: "Comunidade", path: "/comunidade" },
+  { label: "Meus Cursos", path: "/perfil/meus-cursos" },
   { label: "Perfil", path: "/perfil" },
   { label: "Estatísticas", path: "/estatisticas" },
   // "Admin" foi movido para o Footer (acesso discreto no rodapé)

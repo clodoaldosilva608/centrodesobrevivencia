@@ -313,10 +313,70 @@ export interface Database {
         };
         Update: Partial<DailyMissionsInsert>;
       };
+      course_lessons: {
+        Row: {
+          id: string;
+          course_id: string;
+          lesson_index: number;
+          title: string;
+          description: string | null;
+          video_url: string;
+          duration_minutes: number;
+          is_preview: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          lesson_index: number;
+          title: string;
+          description?: string | null;
+          video_url: string;
+          duration_minutes?: number;
+          is_preview?: boolean;
+          updated_by?: string | null;
+        };
+        Update: Partial<{
+          title: string;
+          description: string | null;
+          video_url: string;
+          duration_minutes: number;
+          is_preview: boolean;
+          updated_by: string | null;
+        }>;
+      };
+      course_enrollments: {
+        Row: {
+          id: string;
+          user_id: string;
+          course_id: string;
+          enrolled_at: string;
+          completed_lessons: number[];
+          last_lesson_index: number;
+          last_accessed_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          course_id: string;
+          enrolled_at?: string;
+          completed_lessons?: number[];
+          last_lesson_index?: number;
+        };
+        Update: Partial<{
+          completed_lessons: number[];
+          last_lesson_index: number;
+        }>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      mark_lesson_completed: {
+        Args: { p_course_id: string; p_lesson_index: number };
+        Returns: Database["public"]["Tables"]["course_enrollments"]["Row"];
+      };
     };
     Enums: {
       category_type: "product" | "ebook" | "game" | "challenge";

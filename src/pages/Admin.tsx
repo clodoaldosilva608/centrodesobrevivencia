@@ -63,7 +63,11 @@ import {
   LogOut,
   X,
   Link2,
+  GraduationCap,
+  PlayCircle,
+  Clock,
 } from "lucide-react";
+import { COURSES } from "@/data/courses";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -75,6 +79,7 @@ type SectionKey =
   | "challenges"
   | "achievements"
   | "categories"
+  | "courses"
   | "system";
 
 type Difficulty = "Fácil" | "Médio" | "Difícil" | "Extremo";
@@ -3246,6 +3251,518 @@ function SystemSection() {
   );
 }
 
+// ─── Courses Section ──────────────────────────────────────────────────────────
+
+interface LessonRow {
+  id: string;
+  course_id: string;
+  lesson_index: number;
+  title: string;
+  description: string | null;
+  video_url: string;
+  duration_minutes: number;
+  is_preview: boolean;
+  updated_at: string;
+}
+
+interface EnrollmentRow {
+  id: string;
+  user_id: string;
+  course_id: string;
+  enrolled_at: string;
+  completed_lessons: number[];
+  last_lesson_index: number;
+  last_accessed_at: string | null;
+  profile?: { full_name: string | null; email: string | null } | null;
+}
+
+function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
+  const [activeTab, setActiveTab] = useState<"lessons" | "enrollments" | "migration">("lessons");
+  const [selectedCourse, setSelectedCourse] = useState<string>(COURSES[0]?.id ?? "");
+  const [lessons, setLessons] = useState<LessonRow[]>([]);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [editing, setEditing] = useState<LessonRow | null>(null);
+  const [showMigration, setShowMigration] = useState(false);
+
+  // Load lessons for selected course
+  const loadLessons = useCallback(async (courseId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("course_lessons")
+        .select("*")
+        .eq("course_id", courseId)
+        .order("lesson_index", { ascending: true });
+      if (error) {
+        setEnabled(false);
+        setLessons([]);
+      } else {
+        setEnabled(true);
+        setLessons((data as LessonRow[]) ?? []);
+      }
+    } catch {
+      setEnabled(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load all enrollments (admin can see all via RLS)
+  const loadEnrollments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("course_enrollments")
+        .select("*")
+        .order("enrolled_at", { ascending: false })
+        .limit(200);
+      if (error) {
+        setEnabled(false);
+        setEnrollments([]);
+      } else {
+        // Enrich with profile data
+        const userIds = Array.from(new Set((data ?? []).map((e: any) => e.user_id)));
+        const profilesMap: Record<string, { full_name: string | null; email: string | null }> = {};
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", userIds);
+          (profiles ?? []).forEach((p: any) => {
+            profilesMap[p.id] = { full_name: p.full_name, email: p.email };
+          });
+        }
+        const enriched: EnrollmentRow[] = (data ?? []).map((e: any) => ({
+          ...e,
+          profile: profilesMap[e.user_id] ?? null,
+        }));
+        setEnrollments(enriched);
+        setEnabled(true);
+      }
+    } catch {
+      setEnabled(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "lessons") loadLessons(selectedCourse);
+    else if (activeTab === "enrollments") loadEnrollments();
+  }, [activeTab, selectedCourse, loadLessons, loadEnrollments]);
+
+  // Save lesson (create or update)
+  const saveLesson = async (form: Partial<LessonRow> & { course_id: string; lesson_index: number }) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+      if (form.id) {
+        const { error } = await supabase
+          .from("course_lessons")
+          .update({
+            title: form.title,
+            description: form.description,
+            video_url: form.video_url,
+            duration_minutes: form.duration_minutes ?? 0,
+            is_preview: form.is_preview ?? false,
+            updated_by: userId,
+          })
+          .eq("id", form.id);
+        if (error) throw error;
+        toast.success("Lição atualizada!");
+      } else {
+        const { error } = await supabase
+          .from("course_lessons")
+          .insert({
+            course_id: form.course_id,
+            lesson_index: form.lesson_index,
+            title: form.title,
+            description: form.description ?? null,
+            video_url: form.video_url,
+            duration_minutes: form.duration_minutes ?? 0,
+            is_preview: form.is_preview ?? false,
+            updated_by: userId,
+          });
+        if (error) throw error;
+        toast.success("Lição criada!");
+      }
+      setEditing(null);
+      loadLessons(selectedCourse);
+      onCountsChanged?.();
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`);
+    }
+  };
+
+  const deleteLesson = async (id: string) => {
+    if (!confirm("Excluir esta lição?")) return;
+    try {
+      const { error } = await supabase.from("course_lessons").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Lição excluída");
+      loadLessons(selectedCourse);
+      onCountsChanged?.();
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`);
+    }
+  };
+
+  const deleteEnrollment = async (id: string) => {
+    if (!confirm("Remover esta matrícula?")) return;
+    try {
+      const { error } = await supabase.from("course_enrollments").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Matrícula removida");
+      loadEnrollments();
+      onCountsChanged?.();
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`);
+    }
+  };
+
+  const selectedCourseObj = COURSES.find((c) => c.id === selectedCourse);
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Cursos"
+        subtitle="Gerencie vídeo-aulas, matrículas e progresso dos alunos"
+        icon={GraduationCap}
+        right={
+          <button
+            onClick={() => setShowMigration(!showMigration)}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            <AlertCircle size={12} /> {showMigration ? "Ocultar" : "Ver"} instruções de setup
+          </button>
+        }
+      />
+
+      {/* Migration help banner */}
+      {showMigration && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-5">
+          <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-2 flex items-center gap-2">
+            <AlertCircle size={14} className="text-primary" /> Configuração do banco
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Para habilitar matrículas e vídeo-aulas, rode o script SQL no Supabase:
+          </p>
+          <ol className="text-xs text-foreground/80 space-y-1 mb-3 list-decimal ml-5">
+            <li>Acesse <a href="https://supabase.com/project/mbterwktxczsyevcudoz/sql/new" target="_blank" rel="noreferrer" className="text-primary hover:underline">Supabase SQL Editor</a></li>
+            <li>Cole o conteúdo do arquivo <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">scripts/sql/courses_migration.sql</code></li>
+            <li>Clique em "Run" (Ctrl+Enter)</li>
+            <li>Recarregue esta página — as abas "Lições" e "Matrículas" ficarão ativas</li>
+          </ol>
+          <p className="text-[11px] text-muted-foreground">
+            Sem migration, as páginas públicas de curso e a página Meus Cursos mostram "Em breve".
+          </p>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-2">
+        <button
+          onClick={() => setActiveTab("lessons")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wider transition-colors ${
+            activeTab === "lessons" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Lições
+        </button>
+        <button
+          onClick={() => setActiveTab("enrollments")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium uppercase tracking-wider transition-colors ${
+            activeTab === "enrollments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Matrículas
+        </button>
+      </div>
+
+      {/* Lessons tab */}
+      {activeTab === "lessons" && (
+        <div className="space-y-4">
+          {/* Course selector */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Curso:</label>
+            <select
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              className="bg-background border border-input rounded-md px-3 py-1.5 text-sm text-foreground"
+            >
+              {COURSES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadLessons(selectedCourse)}
+              className="gap-1 text-xs h-8"
+            >
+              <RefreshCw size={12} /> Recarregar
+            </Button>
+          </div>
+
+          {!enabled && !loading && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+              <AlertCircle size={28} className="mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">Tabela course_lessons não existe ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Veja as instruções de setup acima para rodar a migration SQL.
+              </p>
+            </div>
+          )}
+
+          {enabled && !loading && selectedCourseObj && (
+            <>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {lessons.length} de {selectedCourseObj.lessons.length} lições cadastradas
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    setEditing({
+                      id: "",
+                      course_id: selectedCourse,
+                      lesson_index: lessons.length,
+                      title: selectedCourseObj.lessons[lessons.length] ?? `Lição ${lessons.length + 1}`,
+                      description: null,
+                      video_url: "",
+                      duration_minutes: 0,
+                      is_preview: false,
+                      updated_at: new Date().toISOString(),
+                    })
+                  }
+                  className="gap-1 text-xs h-8"
+                  disabled={lessons.length >= selectedCourseObj.lessons.length}
+                >
+                  <Plus size={12} /> Nova lição
+                </Button>
+              </div>
+
+              <TableShell>
+                <thead>
+                  <tr className="border-b border-border">
+                    <Th>#</Th>
+                    <Th>Título</Th>
+                    <Th>URL do vídeo</Th>
+                    <Th>Duração</Th>
+                    <Th>Preview</Th>
+                    <Th>Ações</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lessons.map((l, i) => (
+                    <tr key={l.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-3 text-xs">{i + 1}</td>
+                      <td className="p-3 text-sm text-foreground">{l.title}</td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-xs truncate">
+                        <a href={l.video_url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-1">
+                          <ExternalLink size={10} /> {l.video_url}
+                        </a>
+                      </td>
+                      <td className="p-3 text-xs flex items-center gap-1 mt-3">
+                        <Clock size={10} /> {l.duration_minutes} min
+                      </td>
+                      <td className="p-3">
+                        {l.is_preview ? (
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Grátis</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setEditing(l)} className="p-1.5 rounded hover:bg-muted" title="Editar">
+                            <Pencil size={12} className="text-foreground" />
+                          </button>
+                          <button onClick={() => deleteLesson(l.id)} className="p-1.5 rounded hover:bg-destructive/10" title="Excluir">
+                            <Trash2 size={12} className="text-destructive" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableShell>
+
+              {lessons.length === 0 && <EmptyState message="Nenhuma lição cadastrada ainda. Clique em 'Nova lição'." />}
+            </>
+          )}
+
+          {loading && <Loader label="Carregando lições..." />}
+        </div>
+      )}
+
+      {/* Enrollments tab */}
+      {activeTab === "enrollments" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="outline" size="sm" onClick={loadEnrollments} className="gap-1 text-xs h-8">
+              <RefreshCw size={12} /> Recarregar
+            </Button>
+            <span className="text-xs text-muted-foreground">{enrollments.length} matrículas</span>
+          </div>
+
+          {!enabled && !loading && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
+              <AlertCircle size={28} className="mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">Tabela course_enrollments não existe ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Veja as instruções de setup acima para rodar a migration SQL.
+              </p>
+            </div>
+          )}
+
+          {enabled && !loading && (
+            <TableShell>
+              <thead>
+                <tr className="border-b border-border">
+                  <Th>Aluno</Th>
+                  <Th>Curso</Th>
+                  <Th>Matriculado em</Th>
+                  <Th>Progresso</Th>
+                  <Th>Último acesso</Th>
+                  <Th>Ações</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {enrollments.map((e) => {
+                  const course = COURSES.find((c) => c.id === e.course_id);
+                  const totalLessons = course?.lessons.length ?? 0;
+                  const completed = Array.isArray(e.completed_lessons) ? e.completed_lessons.length : 0;
+                  const pct = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
+                  return (
+                    <tr key={e.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-3 text-sm text-foreground">
+                        {e.profile?.full_name ?? "—"}
+                        <div className="text-[10px] text-muted-foreground">{e.profile?.email ?? e.user_id.slice(0, 8)}</div>
+                      </td>
+                      <td className="p-3 text-sm text-foreground">{course?.title ?? e.course_id}</td>
+                      <td className="p-3 text-xs text-muted-foreground">{formatDate(e.enrolled_at)}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-primary">{pct}%</span>
+                          <span className="text-[10px] text-muted-foreground">{completed}/{totalLessons}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {e.last_accessed_at ? formatDate(e.last_accessed_at) : "—"}
+                      </td>
+                      <td className="p-3">
+                        <button onClick={() => deleteEnrollment(e.id)} className="p-1.5 rounded hover:bg-destructive/10" title="Remover matrícula">
+                          <Trash2 size={12} className="text-destructive" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </TableShell>
+          )}
+
+          {enabled && !loading && enrollments.length === 0 && (
+            <EmptyState message="Nenhuma matrícula ainda. Quando alunos se matricularem, aparecem aqui." />
+          )}
+
+          {loading && <Loader label="Carregando matrículas..." />}
+        </div>
+      )}
+
+      {/* Edit/Create dialog */}
+      {editing && (
+        <LessonEditDialog
+          lesson={editing}
+          onCancel={() => setEditing(null)}
+          onSave={saveLesson}
+        />
+      )}
+    </div>
+  );
+}
+
+function LessonEditDialog({
+  lesson,
+  onCancel,
+  onSave,
+}: {
+  lesson: Partial<LessonRow> & { course_id: string; lesson_index: number };
+  onCancel: () => void;
+  onSave: (form: Partial<LessonRow> & { course_id: string; lesson_index: number }) => void;
+}) {
+  const [form, setForm] = useState({
+    id: lesson.id ?? "",
+    course_id: lesson.course_id,
+    lesson_index: lesson.lesson_index,
+    title: lesson.title ?? "",
+    description: lesson.description ?? "",
+    video_url: lesson.video_url ?? "",
+    duration_minutes: lesson.duration_minutes ?? 0,
+    is_preview: lesson.is_preview ?? false,
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{form.id ? "Editar lição" : "Nova lição"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <Field label="Título">
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          </Field>
+          <Field label="URL do vídeo (YouTube, Vimeo ou MP4)">
+            <Input
+              value={form.video_url}
+              onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+          </Field>
+          <Field label="Descrição (opcional)">
+            <Textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={3}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Duração (min)">
+              <Input
+                type="number"
+                value={form.duration_minutes}
+                onChange={(e) => setForm({ ...form, duration_minutes: toInt(e.target.value, 0) })}
+              />
+            </Field>
+            <SwitchField
+              label="Lição grátis (preview)"
+              checked={form.is_preview}
+              onChange={(v) => setForm({ ...form, is_preview: v })}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onCancel}>Cancelar</Button>
+          <Button
+            onClick={() => onSave(form)}
+            disabled={!form.title.trim() || !form.video_url.trim()}
+          >
+            {form.id ? "Salvar alterações" : "Criar lição"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Sidebar ────────────────────────────────────────────────────────────────
 
 interface SidebarItem {
@@ -3263,6 +3780,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: "challenges", label: "Desafios", short: "Chall", icon: Trophy },
   { key: "achievements", label: "Conquistas", short: "Achiev", icon: Star },
   { key: "categories", label: "Categorias", short: "Categ", icon: FolderTree },
+  { key: "courses", label: "Cursos", short: "Cursos", icon: GraduationCap },
   { key: "system", label: "Sistema", short: "Stats", icon: BarChart3 },
 ];
 
@@ -3386,6 +3904,7 @@ export default function Admin() {
         "challenges",
         "achievements",
         "categories",
+        "courses",
       ];
       const results = await Promise.all(
         tables.map(async (t) => {
@@ -3455,6 +3974,9 @@ export default function Admin() {
           )}
           {active === "categories" && (
             <CategoriesSection onCountsChanged={reloadCounts} />
+          )}
+          {active === "courses" && (
+            <CoursesSection onCountsChanged={reloadCounts} />
           )}
           {active === "system" && <SystemSection />}
         </main>
