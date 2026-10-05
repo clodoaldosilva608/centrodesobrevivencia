@@ -92,7 +92,22 @@ interface DeathInfo {
  *  STATIC DATA
  * ------------------------------------------------------------------ */
 
-const U = (id: string) => `https://images.unsplash.com/photo-${id}?w=1200&h=800&fit=crop&auto=format&q=70`;
+// URLs reais de imagens buscadas via z-ai image-search
+const BIOME_IMAGES: Record<string, string> = {
+  floresta: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/92a3d3c2e130.jpg",
+  deserto: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/4d1aaa0479aa.jpg",
+  montanha: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/776c85982110.jpg",
+  selva: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/1840c311352e.jpg",
+  costa: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b7f833a94d41.jpeg",
+  noite: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/36091887475b.jpg",
+  tempestade: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b0683e2e6990.jpg",
+  agua: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/cc209a4f923f.jpeg",
+  fogo: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/04ca451752e8.jpg",
+  animal: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/701c7b621877.jpg",
+  frutas: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/de4c16e00598.jpg",
+  cobra: "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/4ebbb79e1917.jpg",
+};
+const U = (id: string): string => BIOME_IMAGES[id] || BIOME_IMAGES.floresta;
 
 const ITEMS: Record<string, { name: string; emoji: string }> = {
   faca: { name: "Faca", emoji: "🔪" },
@@ -127,35 +142,35 @@ const BIOMES: Biome[] = [
     name: "Floresta",
     emoji: "🌲",
     blurb: "Sombra, riachos e madeira — mas predadores espreitam nas sombras.",
-    image: U("1448375240586-88270c653f25"),
+    image: BIOME_IMAGES.floresta,
   },
   {
     id: "deserto",
     name: "Deserto",
     emoji: "🏜️",
     blurb: "Sol escaldante de dia, frio cortante à noite. Água quase inexistente.",
-    image: U("1503561272887-c827f0b3e2e9"),
+    image: BIOME_IMAGES.deserto,
   },
   {
     id: "montanha",
     name: "Montanha",
     emoji: "⛰️",
     blurb: "Ar rarefeito, frio extremo e terreno traiçoeiro nas alturas.",
-    image: U("1464822759473-e30ad3d0ee54"),
+    image: BIOME_IMAGES.montanha,
   },
   {
     id: "selva",
     name: "Selva",
     emoji: "🌴",
     blurb: "Umidade opressiva, insetos, cobras e predadores silenciosos.",
-    image: U("1441974234615-d0d5e1f0c5c7"),
+    image: BIOME_IMAGES.selva,
   },
   {
     id: "costa",
     name: "Costa",
     emoji: "🌊",
     blurb: "Maré, peixes e sal — oportunidade e perigo lado a lado.",
-    image: U("1507525428034-b723cd880d80"),
+    image: BIOME_IMAGES.costa,
   },
 ];
 
@@ -210,7 +225,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "flor-d1",
     biome: "floresta", time: "day",
-    backgroundImage: U("1448375240586-88270c653f25"),
+    backgroundImage: BIOME_IMAGES.floresta,
     text: "Você desperta sob a copa densa de uma floresta. O canto de pássaros quebra o silêncio, mas sua garganta está seca e o estômago ronca de fome.",
     options: [
       { label: "Seguir o som da água", icon: "💧", resultText: "Você encontra um riacho cristalino e mata a sede.", statChanges: { hydration: 25, energy: -10 }, itemFound: "agua" },
@@ -222,7 +237,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "flor-d2",
     biome: "floresta", time: "day",
-    backgroundImage: U("1469474988025-13e5b54c7d28"),
+    backgroundImage: BIOME_IMAGES.floresta,
     text: "Uma clareira se abre à sua frente. Raios de sol aquecem o chão coberto de folhas. Há uma árvore caída e sinais de atividade recente.",
     options: [
       { label: "Reunir lenha seca", icon: "🪵", resultText: "Você junta gravetos secos para uma fogueira futura.", statChanges: { energy: -8, warmth: 4 } },
@@ -234,7 +249,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "flor-n1",
     biome: "floresta", time: "night",
-    backgroundImage: U("1502082553048-f6f5dc0cab80"),
+    backgroundImage: BIOME_IMAGES.floresta,
     text: "A noite tombou sobre a floresta. Sombras dançam entre as árvores e o frio se intensifica. Um coro de uivos distantes levanta os pelos da nuca.",
     options: [
       { label: "Acender uma fogueira", icon: "🔥", resultText: "Fagulhas voam. O calor do fogo afasta o medo e os predadores.", statChanges: { warmth: 25, morale: 12, energy: -12 }, itemFound: "isqueiro" },
@@ -248,7 +263,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "des-d1",
     biome: "deserto", time: "day",
-    backgroundImage: U("1503561272887-c827f0b3e2e9"),
+    backgroundImage: BIOME_IMAGES.deserto,
     text: "O sol pune sem piedade. Areia em todas as direções, o horizonte tremendo de calor. Sua língua racha e a cabeça dói.",
     options: [
       { label: "Improvisar véu contra o sol", icon: "🧣", resultText: "Você cobre a cabeça e sente alívio imediato do calor.", statChanges: { warmth: -12, energy: -8, hydration: -5 }, itemFound: "cobertor" },
@@ -260,7 +275,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "des-n1",
     biome: "deserto", time: "night",
-    backgroundImage: U("1419241417788-66ec5232f798"),
+    backgroundImage: BIOME_IMAGES.selva,
     text: "O deserto à noite é outro mundo. O calor esvai e um frio cortante toma conta. Estrelas cobrem o céu num espetáculo frio.",
     options: [
       { label: "Envolver-se no cobertor", icon: "🧣", resultText: "O cobertor retém o calor corporal contra o frio noturno.", statChanges: { warmth: 20, energy: -5 } },
@@ -272,7 +287,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "des-n2",
     biome: "deserto", time: "night",
-    backgroundImage: U("1451188503445-1ce0e5805e9f"),
+    backgroundImage: BIOME_IMAGES.montanha,
     text: "Um vento frio sopra areia fina pelo ar. Você precisa agir antes que o frio minore suas forças e o sono congele a vontade.",
     options: [
       { label: "Abrasigar-se atrás de rochas", icon: "🪨", resultText: "Você esconde-se do vento atrás de uma formação.", statChanges: { warmth: 15, energy: -8 } },
@@ -286,7 +301,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "mon-d1",
     biome: "montanha", time: "day",
-    backgroundImage: U("1464822759473-e30ad3d0ee54"),
+    backgroundImage: BIOME_IMAGES.montanha,
     text: "Ar rarefeito enche seus pulmões. Picos nevados cercam você e o solo é pedregento e íngreme. A altitude dói na cabeça.",
     options: [
       { label: "Escalar até um ponto alto", icon: "🧗", resultText: "Do topo, você avista um vale promissor ao longe.", statChanges: { energy: -25, morale: 8 }, xpReward: 20 },
@@ -298,7 +313,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "mon-d2",
     biome: "montanha", time: "day",
-    backgroundImage: U("1486870591958-9b5d0d0c0c0c"),
+    backgroundImage: BIOME_IMAGES.montanha,
     text: "Uma trilha serpenteia pela encosta. Sinais de deslizamento recente estão por toda parte — pedras soltas, terra revolvida.",
     options: [
       { label: "Seguir a trilha", icon: "🚶", resultText: "A trilha leva a uma passagem mais segura entre os picos.", statChanges: { energy: -18, morale: 5 } },
@@ -310,7 +325,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "mon-n1",
     biome: "montanha", time: "night",
-    backgroundImage: U("1518818412203-8f4d0c0c0c0c"),
+    backgroundImage: BIOME_IMAGES.noite,
     text: "A montanha à noite é brutalmente fria. O vento uiva entre os penhascos e a temperatura cai perigosamente abaixo de zero.",
     options: [
       { label: "Acender fogueira abrigada", icon: "🔥", resultText: "Entre rochas, você protege as chamas do vento.", statChanges: { warmth: 30, morale: 10, energy: -12 } },
@@ -324,7 +339,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "sel-d1",
     biome: "selva", time: "day",
-    backgroundImage: U("1542295669481-5e9eb5a3a3a3"),
+    backgroundImage: BIOME_IMAGES.agua,
     text: "Umidade esmaga seus sentidos. Insetos zunem ao redor, o ar é espesso e quente. Cipós e folhas gigantes bloqueiam a visão.",
     options: [
       { label: "Coletar água das folhas", icon: "💧", resultText: "Você espreme orvalho de folhas largas.", statChanges: { hydration: 20, energy: -8 } },
@@ -336,7 +351,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "sel-n1",
     biome: "selva", time: "night",
-    backgroundImage: U("1502082553048-f6f5dc0cab80"),
+    backgroundImage: BIOME_IMAGES.floresta,
     text: "A selva à noite fervilha. Rugidos distantes, estalos de galhos, olhos brilham na escuridão densa. O ar permanece pesado e quente.",
     options: [
       { label: "Acender fogueira defensiva", icon: "🔥", resultText: "O fogo forma um anel de proteção contra a vida noturna.", statChanges: { warmth: 20, morale: 12, energy: -12 } },
@@ -348,7 +363,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "sel-n2",
     biome: "selva", time: "night",
-    backgroundImage: U("1428539852277"),
+    backgroundImage: BIOME_IMAGES.tempestade,
     text: "Uma tempestade tropical explode. Chuva torrencial, ventos fortes, raios cortam o céu. Você precisa agir rápido antes de ser varrido.",
     options: [
       { label: "Coletar água da chuva", icon: "🪣", resultText: "Você aproveita cada gota da tempestade.", statChanges: { hydration: 40, energy: -8 }, itemFound: "agua" },
@@ -362,7 +377,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "cos-d1",
     biome: "costa", time: "day",
-    backgroundImage: U("1507525428034-b723cd880d80"),
+    backgroundImage: BIOME_IMAGES.costa,
     text: "Ondas quebram numa praia vasta. Sal no ar, gaivotas gritam. Destroços de madeira e plástico espalhados pela areia.",
     options: [
       { label: "Pescar com anzol improvisado", icon: "🎣", resultText: "Um peixe morde! Comida fresca garantida.", statChanges: { hunger: 25, energy: -18 }, itemFound: "peixe" },
@@ -374,7 +389,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "cos-d2",
     biome: "costa", time: "day",
-    backgroundImage: U("1505142468610-2b2d0c0c0c0c"),
+    backgroundImage: BIOME_IMAGES.noite,
     text: "Você vê pegadas na areia — humanas, recentes. Podem ser de salvadores ou de outra pessoa perdida como você.",
     options: [
       { label: "Gritar por socorro", icon: "📣", resultText: "Você grita até a garganta doer. Sem resposta visível, mas não desiste.", statChanges: { energy: -10, morale: 4 } },
@@ -386,7 +401,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: "cos-n1",
     biome: "costa", time: "night",
-    backgroundImage: U("1518818412203-8f4d0c0c0c0c"),
+    backgroundImage: BIOME_IMAGES.noite,
     text: "A maré subiu. A praia encolheu. O mar ruge escuro e o vento salgado corta a pele.",
     options: [
       { label: "Manter a fogueira acesa", icon: "🔥", resultText: "Você alimenta o fogo contra o vento salgado.", statChanges: { warmth: 20, morale: 8, energy: -12 } },
@@ -402,20 +417,20 @@ const SCENARIOS: Scenario[] = [
  * ------------------------------------------------------------------ */
 
 const RANDOM_EVENTS: RandomEvent[] = [
-  { id: "ev-wolf", biome: "any", text: "Um rugido corta o silêncio! Um predador avança pelas sombras e te ataca antes de fugir.", image: U("1561654967-3a8e6c0c0c0c"), effect: { health: -15, morale: -10, energy: -5 } },
-  { id: "ev-rain", biome: "any", text: "Uma chuva inesperada cai dos céus! Você estica o rosto para a água fresca.", image: U("1428539852277"), effect: { hydration: 25, warmth: -8 } },
-  { id: "ev-cold", biome: "any", text: "Uma rajada de frio polar atinge a região. Seus ossos tremem.", image: U("1451188503445-1ce0e5805e9f"), effect: { warmth: -20, health: -5 } },
-  { id: "ev-heat", biome: "deserto", text: "O calor do meio-dia fica insuportável. Você sente a água evaporando do corpo.", image: U("1503561272887-c827f0b3e2e9"), effect: { hydration: -15, warmth: 15 } },
-  { id: "ev-berries", biome: "any", text: "Você tropeça num arbusto cheio de frutas maduras!", image: U("1502082553048-f6f5dc0cab80"), effect: { hunger: 22 }, itemFound: "frutas" },
-  { id: "ev-snake", biome: "any", text: "Uma cobra pica sua perna! Dor e pânico tomam conta.", image: U("1441974234615-d0d5e1f0c5c7"), effect: { health: -12, morale: -8 } },
-  { id: "ev-wanderer", biome: "any", text: "Um andarilho aparece! Ele compartilha comida e histórias antes de seguir viagem.", image: U("1469474988025-13e5b54c7d28"), effect: { hunger: 15, morale: 15, energy: 5 }, itemFound: "comida" },
-  { id: "ev-ankle", biome: "any", text: "Você torce o tornozelo numa raiz escondida. A dor dificulta cada passo.", image: U("1448375240586-88270c653f25"), effect: { energy: -15, health: -5 } },
-  { id: "ev-spring", biome: "any", text: "Você encontra uma nascente escondida entre as pedras!", image: U("1464822759473-e30ad3d0ee54"), effect: { hydration: 30, morale: 5 }, itemFound: "agua" },
-  { id: "ev-mosquito", biome: "selva", text: "Um enxame de mosquitos ataca feroz! Você mal consegue respirar entre as picadas.", image: U("1542295669481-5e9eb5a3a3a3"), effect: { health: -6, morale: -10 } },
-  { id: "ev-sunrise", biome: "any", text: "Um nascer de sol deslumbrante aquece sua alma e renova a esperança.", image: U("1507525428034-b723cd880d80"), effect: { morale: 15, warmth: 5 } },
-  { id: "ev-cache", biome: "any", text: "Você descobre um cache de suprimentos enterrado por um sobrevivente anterior!", image: U("1469474988025-13e5b54c7d28"), effect: { morale: 10 }, itemFound: "kit" },
-  { id: "ev-eagle", biome: "any", text: "Uma águia empurra um peixe perto de você — presente inesperado dos céus.", image: U("1507525428034-b723cd880d80"), effect: { hunger: 18 }, itemFound: "peixe" },
-  { id: "ev-fox", biome: "any", text: "Uma raposa curiosa fuça seu acampamento e foge com parte da sua comida.", image: U("1441974234615-d0d5e1f0c5c7"), effect: { hunger: -10 } },
+  { id: "ev-wolf", biome: "any", text: "Um rugido corta o silêncio! Um predador avança pelas sombras e te ataca antes de fugir.", image: BIOME_IMAGES.animal, effect: { health: -15, morale: -10, energy: -5 } },
+  { id: "ev-rain", biome: "any", text: "Uma chuva inesperada cai dos céus! Você estica o rosto para a água fresca.", image: BIOME_IMAGES.tempestade, effect: { hydration: 25, warmth: -8 } },
+  { id: "ev-cold", biome: "any", text: "Uma rajada de frio polar atinge a região. Seus ossos tremem.", image: BIOME_IMAGES.montanha, effect: { warmth: -20, health: -5 } },
+  { id: "ev-heat", biome: "deserto", text: "O calor do meio-dia fica insuportável. Você sente a água evaporando do corpo.", image: BIOME_IMAGES.deserto, effect: { hydration: -15, warmth: 15 } },
+  { id: "ev-berries", biome: "any", text: "Você tropeça num arbusto cheio de frutas maduras!", image: BIOME_IMAGES.floresta, effect: { hunger: 22 }, itemFound: "frutas" },
+  { id: "ev-snake", biome: "any", text: "Uma cobra pica sua perna! Dor e pânico tomam conta.", image: BIOME_IMAGES.selva, effect: { health: -12, morale: -8 } },
+  { id: "ev-wanderer", biome: "any", text: "Um andarilho aparece! Ele compartilha comida e histórias antes de seguir viagem.", image: BIOME_IMAGES.floresta, effect: { hunger: 15, morale: 15, energy: 5 }, itemFound: "comida" },
+  { id: "ev-ankle", biome: "any", text: "Você torce o tornozelo numa raiz escondida. A dor dificulta cada passo.", image: BIOME_IMAGES.floresta, effect: { energy: -15, health: -5 } },
+  { id: "ev-spring", biome: "any", text: "Você encontra uma nascente escondida entre as pedras!", image: BIOME_IMAGES.montanha, effect: { hydration: 30, morale: 5 }, itemFound: "agua" },
+  { id: "ev-mosquito", biome: "selva", text: "Um enxame de mosquitos ataca feroz! Você mal consegue respirar entre as picadas.", image: BIOME_IMAGES.agua, effect: { health: -6, morale: -10 } },
+  { id: "ev-sunrise", biome: "any", text: "Um nascer de sol deslumbrante aquece sua alma e renova a esperança.", image: BIOME_IMAGES.costa, effect: { morale: 15, warmth: 5 } },
+  { id: "ev-cache", biome: "any", text: "Você descobre um cache de suprimentos enterrado por um sobrevivente anterior!", image: BIOME_IMAGES.floresta, effect: { morale: 10 }, itemFound: "kit" },
+  { id: "ev-eagle", biome: "any", text: "Uma águia empurra um peixe perto de você — presente inesperado dos céus.", image: BIOME_IMAGES.costa, effect: { hunger: 18 }, itemFound: "peixe" },
+  { id: "ev-fox", biome: "any", text: "Uma raposa curiosa fuça seu acampamento e foge com parte da sua comida.", image: BIOME_IMAGES.selva, effect: { hunger: -10 } },
 ];
 
 /* ------------------------------------------------------------------ *
