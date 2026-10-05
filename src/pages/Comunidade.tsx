@@ -5,8 +5,17 @@ import Section from "@/components/Section";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award, Map } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, User, Clock, Trash2, Trophy, Crown, Medal, Award, Map, ExternalLink, Heart } from "lucide-react";
 import SEO from "@/components/SEO";
+
+const TIKTOK_URL = "https://www.tiktok.com/@centro.de.sobrevi?_r=1&_t=ZS-9AI03G3qnrg";
+
+// TikTok logo as inline SVG (lucide-react doesn't ship a TikTok icon)
+const TikTokIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.84c.298 0 .594.046.878.138V9.3a6.337 6.337 0 0 0-1-.08A6.34 6.34 0 0 0 3 20.27a6.34 6.34 0 0 0 10.92-4.33V8.69a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.1-.12z" />
+  </svg>
+);
 
 interface ForumPost {
   id: string;
@@ -127,6 +136,83 @@ const Comunidade = () => {
     <Layout>
       <SEO title="Comunidade — Fórum e Ranking" description="Conecte-se com outros sobreviventes, compartilhe experiências e suba no ranking de XP." />
       <Section title="Comunidade" subtitle="Troque experiências com outros sobreviventes">
+        {/* TikTok Follow Banner */}
+        <motion.a
+          href={TIKTOK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="group relative block overflow-hidden rounded-2xl mb-8 border border-white/10"
+          style={{
+            background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)",
+          }}
+        >
+          {/* Glow accents */}
+          <div
+            className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full blur-3xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"
+            style={{ background: "#FE2C55" }}
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute -bottom-16 -left-10 w-48 h-48 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity duration-500"
+            style={{ background: "#25F4EE" }}
+            aria-hidden="true"
+          />
+
+          <div className="relative flex flex-col sm:flex-row items-center gap-5 p-5 sm:p-6">
+            {/* Avatar/icon block */}
+            <div className="relative flex-shrink-0">
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, #FE2C55 0%, #25F4EE 100%)",
+                  boxShadow: "0 0 30px rgba(254, 44, 85, 0.5), 0 0 60px rgba(37, 244, 238, 0.3)",
+                }}
+              >
+                <TikTokIcon size={36} className="text-white" />
+              </div>
+            </div>
+
+            {/* Text content */}
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                <h3 className="font-heading text-base sm:text-lg tracking-wider text-white">
+                  Siga no TikTok
+                </h3>
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                  style={{ background: "#FE2C55", color: "#fff" }}
+                >
+                  Ao vivo
+                </span>
+              </div>
+              <p className="text-sm text-white/80 mb-1">
+                Dicas rápidas de sobrevivência, bushcraft e equipamentos em vídeo.
+              </p>
+              <p className="text-sm font-medium text-white/90 truncate">
+                @centro.de.sobrevi
+              </p>
+            </div>
+
+            {/* CTA */}
+            <div className="flex-shrink-0">
+              <span
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-black transition-transform group-hover:scale-105"
+                style={{
+                  background: "linear-gradient(135deg, #25F4EE 0%, #ffffff 100%)",
+                  boxShadow: "0 8px 24px rgba(37, 244, 238, 0.35)",
+                }}
+              >
+                <Heart size={16} className="fill-black" />
+                Seguir agora
+                <ExternalLink size={14} />
+              </span>
+            </div>
+          </div>
+        </motion.a>
+
         {/* Categories */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {CATEGORIES.map((cat) => (
