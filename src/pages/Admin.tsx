@@ -68,6 +68,7 @@ import {
   Clock,
 } from "lucide-react";
 import { COURSES } from "@/data/courses";
+import { useAppSetting } from "@/hooks/useAppSetting";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -3285,6 +3286,34 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
   const [enabled, setEnabled] = useState(true);
   const [editing, setEditing] = useState<LessonRow | null>(null);
   const [showMigration, setShowMigration] = useState(false);
+  const [savingSetting, setSavingSetting] = useState(false);
+
+  // Setting toggle: courses_landing_status (coming_soon | live)
+  const {
+    value: landingStatus,
+    loading: loadingLanding,
+    setValue: setLandingStatus,
+    reload: reloadLanding,
+  } = useAppSetting<"coming_soon" | "live">("courses_landing_status", "coming_soon");
+
+  const isLandingLive = landingStatus === "live";
+
+  const toggleLandingStatus = async () => {
+    setSavingSetting(true);
+    const next = isLandingLive ? "coming_soon" : "live";
+    const result = await setLandingStatus(next);
+    setSavingSetting(false);
+    if (result.ok) {
+      toast.success(
+        next === "live"
+          ? "Landing page ATIVADA — 'Matrículas abertas'"
+          : "Landing page DESATIVADA — 'Em breve'"
+      );
+      reloadLanding();
+    } else {
+      toast.error(`Erro: ${result.error}`);
+    }
+  };
 
   // Load lessons for selected course
   const loadLessons = useCallback(async (courseId: string) => {
@@ -3460,6 +3489,54 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
           </p>
         </div>
       )}
+
+      {/* Landing toggle — controla badge "Em breve" / "Matrículas abertas" */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+              <GraduationCap size={14} className="text-primary" /> Status da landing page
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-xl">
+              Controla o que a seção "Cursos em Destaque" da home mostra.
+              Em <strong>"Em breve"</strong>, badges âmbar aparecem nos cards.
+              Em <strong>"Matrículas abertas"</strong>, badges esmeralda aparecem e o CTA vira primary.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {loadingLanding ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <span
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                    isLandingLive
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                  }`}
+                >
+                  {isLandingLive ? "● Matrículas abertas" : "● Em breve"}
+                </span>
+                <Button
+                  onClick={toggleLandingStatus}
+                  disabled={savingSetting}
+                  size="sm"
+                  variant={isLandingLive ? "outline" : "default"}
+                  className="gap-1 text-xs h-8"
+                >
+                  {savingSetting ? (
+                    <><Loader2 size={12} className="animate-spin" /> Salvando...</>
+                  ) : isLandingLive ? (
+                    "Desativar"
+                  ) : (
+                    "Ativar matrículas"
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-2">

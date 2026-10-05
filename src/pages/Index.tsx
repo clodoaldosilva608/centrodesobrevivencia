@@ -9,6 +9,7 @@ import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { MANUAL_URL } from "@/lib/manual";
 import { supabase } from "@/lib/supabase";
+import { useAppSetting } from "@/hooks/useAppSetting";
 import { Loader2 } from "lucide-react";
 
 const features = [
@@ -31,6 +32,11 @@ interface HomeProduct {
 const Index = () => {
   const [products, setProducts] = useState<HomeProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const { value: coursesStatus, loading: loadingStatus } = useAppSetting<"coming_soon" | "live">(
+    "courses_landing_status",
+    "coming_soon"
+  );
+  const isCoursesLive = coursesStatus === "live";
 
   useEffect(() => {
     (async () => {
@@ -177,15 +183,27 @@ const Index = () => {
         title="Cursos em Destaque"
         subtitle="Trilha progressiva de aprendizado — do iniciante ao avançado"
       >
-        {/* Status badge — matrículas abertas */}
+        {/* Status badge — controlado por app_settings (toggleable via Admin) */}
         <div className="flex justify-center mb-6">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold uppercase tracking-widest">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          {loadingStatus ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : isCoursesLive ? (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold uppercase tracking-widest">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Matrículas abertas
             </span>
-            Matrículas abertas
-          </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-widest">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Em breve — matrículas abertas em breve
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -213,6 +231,12 @@ const Index = () => {
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                {/* "Em breve" overlay quando toggle está desligado */}
+                {!isCoursesLive && (
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-500/85 text-white backdrop-blur">
+                    Em breve
+                  </span>
+                )}
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/85 text-primary-foreground mb-1">
                     {c.cat}
@@ -233,9 +257,14 @@ const Index = () => {
         <div className="text-center mt-6">
           <Link
             to="/cursos"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-6 py-2.5 rounded-md hover:opacity-90 transition-opacity text-xs"
+            className={`inline-flex items-center gap-2 font-heading tracking-wider uppercase px-6 py-2.5 rounded-md transition-colors text-xs ${
+              isCoursesLive
+                ? "bg-primary text-primary-foreground hover:opacity-90"
+                : "border border-primary text-primary hover:bg-primary/10"
+            }`}
           >
-            Ver todos os cursos <ChevronRight size={14} />
+            {isCoursesLive ? "Ver todos os cursos" : "Ver catálogo completo"}
+            <ChevronRight size={14} />
           </Link>
         </div>
       </Section>

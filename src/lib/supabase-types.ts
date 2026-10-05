@@ -369,6 +369,26 @@ export interface Database {
           last_lesson_index: number;
         }>;
       };
+      app_settings: {
+        Row: {
+          key: string;
+          value: string;
+          description: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value: string;
+          description?: string | null;
+          updated_by?: string | null;
+        };
+        Update: Partial<{
+          value: string;
+          description: string | null;
+          updated_by: string | null;
+        }>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
