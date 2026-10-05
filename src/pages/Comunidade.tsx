@@ -213,6 +213,22 @@ const Comunidade = () => {
           </div>
         </motion.a>
 
+        {/* Infographic banner — Centro de Sobrevivência brand */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl mb-8 border border-border"
+        >
+          <img
+            src="/cursos/banner-comunidade.webp"
+            alt="Centro de Sobrevivência — movimente-se, prepare-se, sobreviva"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
+        </motion.div>
+
         {/* Categories */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {CATEGORIES.map((cat) => (

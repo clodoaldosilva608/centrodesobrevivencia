@@ -10,6 +10,7 @@ import Welcome from "./pages/Welcome";
 import Index from "./pages/Index";
 import Equipamentos from "./pages/Equipamentos";
 import ProdutoDetalhe from "./pages/ProdutoDetalhe";
+import Cursos from "./pages/Cursos";
 import Ebooks from "./pages/Ebooks";
 import EbookDetalhe from "./pages/EbookDetalhe";
 import Jogos from "./pages/Jogos";
@@ -70,6 +71,7 @@ const App = () => {
                   <Route path="/login" element={<Login />} />
                   <Route path="/equipamentos" element={<Equipamentos />} />
                   <Route path="/equipamentos/:id" element={<ProdutoDetalhe />} />
+                  <Route path="/cursos" element={<Cursos />} />
                   <Route path="/ebooks" element={<Ebooks />} />
                   <Route path="/ebooks/:id" element={<EbookDetalhe />} />
                   <Route path="/jogos" element={<Jogos />} />

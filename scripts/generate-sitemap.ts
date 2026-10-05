@@ -15,6 +15,7 @@ const staticEntries: SitemapEntry[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/welcome", changefreq: "monthly", priority: "0.5" },
   { path: "/equipamentos", changefreq: "weekly", priority: "0.9" },
+  { path: "/cursos", changefreq: "weekly", priority: "0.9" },
   { path: "/ebooks", changefreq: "weekly", priority: "0.9" },
   { path: "/jogos", changefreq: "weekly", priority: "0.8" },
   { path: "/jogos/simulador-sobrevivencia-floresta", changefreq: "monthly", priority: "0.7" },

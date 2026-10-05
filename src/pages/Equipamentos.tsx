@@ -82,6 +82,30 @@ const Equipamentos = () => {
     <Layout>
       <SEO title="Equipamentos Táticos — Gear de Sobrevivência" description="Catálogo de equipamentos de bushcraft, sobrevivencialismo e camping com reviews detalhados, especificações e opções de compra." />
       <Section title="Equipamentos de Sobrevivência" subtitle="Tudo que você precisa para qualquer expedição">
+        {/* Hero banner ilustrativo */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl border border-border mb-8"
+        >
+          <img
+            src="/cursos/curso-equipamentos-essenciais.webp"
+            alt="Kit de equipamentos essenciais de sobrevivência"
+            loading="eager"
+            decoding="async"
+            className="w-full h-48 sm:h-64 md:h-80 object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-5 md:p-8">
+            <h3 className="font-heading text-xl md:text-2xl tracking-wider uppercase text-foreground">
+              Kit essencial do sobrevivente
+            </h3>
+            <p className="mt-1 text-xs md:text-sm text-muted-foreground max-w-xl">
+              Mochila, faca fixa, filtro de água, mapa, bússola, lampião e multitool — o gear mínimo para qualquer cenário.
+            </p>
+          </div>
+        </motion.div>
+
         {/* Search bar */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

@@ -18,6 +18,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Início", path: "/" },
+  { label: "Cursos", path: "/cursos", highlight: true },
   { label: "Equipamentos", path: "/equipamentos" },
   { label: "E-books", path: "/ebooks" },
   { label: "Jogos", path: "/jogos" },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Compass, Flame, Mountain, Shield, Globe, ExternalLink } from "lucide-react";
+import { Compass, Flame, Mountain, Shield, Globe, ExternalLink, Layers, Clock, Award, ChevronRight } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import Section from "@/components/Section";
 import ContentCard from "@/components/ContentCard";
@@ -171,6 +171,63 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Cursos em destaque */}
+      <Section
+        title="Cursos em Destaque"
+        subtitle="Trilha progressiva de aprendizado — do iniciante ao avançado"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {[
+            { id: "essencial-sobrevivencia", title: "Essencial de Sobrevivência", cat: "Fundamentos", img: "/cursos/curso-essencial-sobrevivencia.webp" },
+            { id: "dominio-do-fogo", title: "Domínio do Fogo", cat: "Fogo", img: "/cursos/curso-dominio-do-fogo.webp" },
+            { id: "purificacao-agua", title: "Purificação de Água", cat: "Água", img: "/cursos/curso-purificacao-agua.webp" },
+            { id: "mente-forte", title: "Mente Forte", cat: "Mentalidade", img: "/cursos/curso-mente-forte.webp" },
+          ].map((c, i) => (
+            <Link key={c.id} to="/cursos" className="group block">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="relative overflow-hidden rounded-lg border border-border group-hover:border-primary/50 transition-colors"
+              >
+                <div className="aspect-[4/5] overflow-hidden">
+                  <img
+                    src={c.img}
+                    alt={c.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary/85 text-primary-foreground mb-1">
+                    {c.cat}
+                  </span>
+                  <p className="text-sm font-medium text-foreground line-clamp-2">{c.title}</p>
+                </div>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+        <div className="text-center mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><Layers size={12} /> 8 cursos disponíveis</span>
+          <span className="opacity-40">·</span>
+          <span className="flex items-center gap-1"><Clock size={12} /> 65h+ de conteúdo</span>
+          <span className="opacity-40">·</span>
+          <span className="flex items-center gap-1"><Award size={12} /> Iniciante ao avançado</span>
+        </div>
+        <div className="text-center mt-6">
+          <Link
+            to="/cursos"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-6 py-2.5 rounded-md hover:opacity-90 transition-opacity text-xs"
+          >
+            Ver todos os cursos <ChevronRight size={14} />
+          </Link>
+        </div>
+      </Section>
 
       {/* Equipamentos — produtos reais do Supabase */}
       <Section title="Equipamentos de Sobrevivência" subtitle="Gear essencial para qualquer aventura">
