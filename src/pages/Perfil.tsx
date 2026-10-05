@@ -334,6 +334,22 @@ const Perfil = () => {
             })}
           </div>
         </div>
+
+        {/* Manifesto banner — estilo de vida do sobrevivente */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative overflow-hidden rounded-xl border border-border mt-8"
+        >
+          <img
+            src="/cursos/banner-estilo-de-vida.webp"
+            alt="Sobrevivência: mais que uma atividade, um estilo de vida"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
+        </motion.div>
       </div>
     </Layout>
   );

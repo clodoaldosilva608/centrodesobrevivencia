@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Equipamentos from "./pages/Equipamentos";
 import ProdutoDetalhe from "./pages/ProdutoDetalhe";
 import Cursos from "./pages/Cursos";
+import CursoDetalhe from "./pages/CursoDetalhe";
 import Ebooks from "./pages/Ebooks";
 import EbookDetalhe from "./pages/EbookDetalhe";
 import Jogos from "./pages/Jogos";
@@ -72,6 +73,7 @@ const App = () => {
                   <Route path="/equipamentos" element={<Equipamentos />} />
                   <Route path="/equipamentos/:id" element={<ProdutoDetalhe />} />
                   <Route path="/cursos" element={<Cursos />} />
+                  <Route path="/cursos/:id" element={<CursoDetalhe />} />
                   <Route path="/ebooks" element={<Ebooks />} />
                   <Route path="/ebooks/:id" element={<EbookDetalhe />} />
                   <Route path="/jogos" element={<Jogos />} />

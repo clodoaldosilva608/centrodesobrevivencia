@@ -2,6 +2,7 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { products, ebooks, games } from "../src/data/mockData";
+import { COURSES } from "../src/data/courses";
 
 const BASE_URL = process.env.SITE_URL ?? "https://centrodesobrevivencia.app";
 
@@ -47,7 +48,13 @@ const gameEntries: SitemapEntry[] = games.map((g) => ({
   priority: "0.6",
 }));
 
-const entries: SitemapEntry[] = [...staticEntries, ...productEntries, ...ebookEntries, ...gameEntries];
+const courseEntries: SitemapEntry[] = COURSES.map((c) => ({
+  path: `/cursos/${encodeURIComponent(c.id)}`,
+  changefreq: "monthly",
+  priority: "0.7",
+}));
+
+const entries: SitemapEntry[] = [...staticEntries, ...productEntries, ...ebookEntries, ...gameEntries, ...courseEntries];
 
 const xml = [
   `<?xml version="1.0" encoding="UTF-8"?>`,

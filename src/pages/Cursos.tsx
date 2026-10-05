@@ -15,177 +15,15 @@ import {
   Lock,
   PlayCircle,
 } from "lucide-react";
-
-interface Course {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  category: string;
-  level: "Iniciante" | "Intermediário" | "Avançado";
-  modules: number;
-  hours: number;
-  lessons: string[];
-  featured?: boolean;
-}
-
-const COURSES: Course[] = [
-  {
-    id: "essencial-sobrevivencia",
-    title: "Essencial de Sobrevivência",
-    subtitle: "O ponto de partida para todo sobrevivente",
-    description:
-      "Curso introdutório completo cobrindo os 5 pilares: água, fogo, abrigo, comida e resgate. Você sai com clareza do que fazer primeiro em qualquer situação de risco, das primeiras 24 horas até o resgate.",
-    image: "/cursos/curso-essencial-sobrevivencia.webp",
-    category: "Fundamentos",
-    level: "Iniciante",
-    modules: 6,
-    hours: 8,
-    lessons: ["A regra do 3", "Avaliação de cena", "Kit pessoal mínimo", "Plano de resgate", "Sinalização", "Psicologia do pânico"],
-    featured: true,
-  },
-  {
-    id: "purificacao-agua",
-    title: "Purificação de Água na Natureza",
-    subtitle: "Sem água você tem 3 dias. Aprenda a nunca ficar sem.",
-    description:
-      "Da coleta em rios turvos à destilação solar, este curso cobre todos os métodos de tratamento de água em campo. Inclui uso de filtros portáteis (LifeStraw, Sawyer), fervura eficiente, pastilhas cloradoras e destilação improvisada.",
-    image: "/cursos/curso-purificacao-agua.webp",
-    category: "Água",
-    level: "Iniciante",
-    modules: 5,
-    hours: 6,
-    lessons: ["Fontes seguras vs. contaminadas", "Filtro portátil passo a passo", "Fervura eficiente", "Pastilhas e cloro", "Destilação solar improvisada"],
-  },
-  {
-    id: "fundamentos-bushcraft",
-    title: "Fundamentos de Bushcraft",
-    subtitle: "Viver com o que a floresta oferece",
-    description:
-      "O bushcraft não é só sobreviver — é habitar a natureza com habilidade. Este curso conecta os fundamentos do sobrevivencialismo com técnicas de bushcraft: fogo por atrito, abrigos de longa duração, ferramentas e cordoaria natural.",
-    image: "/cursos/curso-fundamentos-bushcraft.webp",
-    category: "Bushcraft",
-    level: "Intermediário",
-    modules: 7,
-    hours: 10,
-    lessons: ["Bow drill (fogo por atrito)", "Abrigo de longa duração", "Cordoaria natural", "Uso seguro de faca", "Processamento de lenha", "Fogueira tipológica", "Higiene de campo"],
-  },
-  {
-    id: "navegacao-trilha",
-    title: "Navegação e Trilha",
-    subtitle: "Não se perca mais. Aprenda a ler o terreno.",
-    description:
-      "Navegação clássica com bússola e mapa topográfico, leitura de relevo, rumo reverso, intersecção de rumos e triangulação. Inclui navegação solar, pelo relevo e uso de GPS offline em emergência.",
-    image: "/cursos/curso-navegacao-trilha.webp",
-    category: "Navegação",
-    level: "Intermediário",
-    modules: 6,
-    hours: 9,
-    lessons: ["Leitura de mapa topográfico", "Bússola: rumo e azimute", "Triangulação", "Navegação solar", "Navegação por relevo", "GPS offline e waypoints"],
-  },
-  {
-    id: "equipamentos-essenciais",
-    title: "Equipamentos Essenciais",
-    subtitle: "O gear certo pode salvar sua vida — saiba escolher",
-    description:
-      "Como montar seu kit de sobrevivência modular sem peso morto. Comparativo de mochilas, facas, filtros, lampiões, multisplash, roupas e calçados. Inclui checklist imprimível e guia de manutenção de campo.",
-    image: "/cursos/curso-equipamentos-essenciais.webp",
-    category: "Equipamentos",
-    level: "Iniciante",
-    modules: 5,
-    hours: 7,
-    lessons: ["Filosofia do kit modular", "Escolha de faca fixa", "Mochila ergonométrica", "Lanterna e lampião", "Manutenção e lubrificação"],
-  },
-  {
-    id: "mente-forte",
-    title: "Mente Forte: Psicologia da Sobrevivência",
-    subtitle: "O corpo segue a mente. Treine a sua.",
-    description:
-      "Estudos militares mostram que 80% das mortes em situações de sobrevivência são causadas por pânico, não por falta de recursos. Este curso aborda concentração, controle de respiração, tomada de decisão sob estresse e resiliência emocional.",
-    image: "/cursos/curso-mente-forte.webp",
-    category: "Mentalidade",
-    level: "Avançado",
-    modules: 4,
-    hours: 5,
-    lessons: ["Respiração tática 4-4-4-4", "Regra STOP", "Decisão sob estresse", "Resiliência emocional"],
-  },
-  {
-    id: "acampamento-autonomo",
-    title: "Acampamento Autônomo",
-    subtitle: "Passe 72h sozinho em campo — e goste",
-    description:
-      "Do select do local à desmontagem do acampamento, este curso coloca você em campo por 72 horas simuladas com gear mínimo. Inclui setup noturno, gerenciamento de bateria, sono reparador em campo e higiene prolongada.",
-    image: "/cursos/curso-acampamento-autonomo.webp",
-    category: "Campo",
-    level: "Avançado",
-    modules: 6,
-    hours: 12,
-    lessons: ["Seleção de local", "Setup noturno", "Sonífero natural", "Gestão de bateria", "Higiene prolongada", "Desmontagem sem rastro"],
-  },
-  {
-    id: "dominio-do-fogo",
-    title: "Domínio do Fogo",
-    subtitle: "Da pederneira ao fogo de longa duração",
-    description:
-      "Tudo sobre fogo em condições adversas: pederneira (ferro-cério), isqueiros sob chuva, fogo por atrito (bow drill e hand drill), fogueiras tipológicas, manutenção noturna e extinção segura. Inclui prática com tinder úmido.",
-    image: "/cursos/curso-dominio-do-fogo.webp",
-    category: "Fogo",
-    level: "Intermediário",
-    modules: 5,
-    hours: 8,
-    lessons: ["Pederneira avançada", "Tinder úmido", "Bow drill", "Hand drill", "Fogo de longa duração"],
-  },
-  {
-    id: "defesa-pessoal",
-    title: "Defesa Pessoal e Combate Corpo a Corpo",
-    subtitle: "Técnicas reais para o mundo real — não ringue",
-    description:
-      "Curso prático de autodefesa focado em situações reais de risco: golpes de imobilização, defesa contra agressores armados, projeções, finalizações e condicionamento físico específico. Inclui disciplina mental e protocolo de fuga antes de confronto.",
-    image: "/cursos/curso-defesa-pessoal.webp",
-    category: "Combate",
-    level: "Avançado",
-    modules: 6,
-    hours: 12,
-    lessons: ["Golpes e defesa base", "Defesa contra faca", "Projeções", "Finalizações", "Condicionamento físico", "Protocolo de fuga"],
-  },
-  {
-    id: "construcao-abrigos",
-    title: "Construção de Abrigos Naturais",
-    subtitle: "Proteção, conforto e segurança em qualquer clima",
-    description:
-      "Aprenda a montar abrigos eficazes com materiais do terreno e lona: tarp, A-frame, cabana de galhos, abrigo iglu/ninja e Debris Hut. Inclui seleção de local, isolamento térmico do solo, impermeabilização e ventilação para fogueira interna.",
-    image: "/cursos/curso-construcao-abrigos.webp",
-    category: "Abrigo",
-    level: "Intermediário",
-    modules: 6,
-    hours: 9,
-    lessons: ["Seleção de local", "Tarp e A-frame", "Cabana de galhos", "Debris Hut", "Iglu ninja", "Fogueira interna segura"],
-  },
-  {
-    id: "bug-out-bag",
-    title: "Montagem de Bug Out Bag (BOB)",
-    subtitle: "Seu kit de emergência para sair do imprevisto",
-    description:
-      "Como montar um BOB completo e leve: água, alimentação, abrigo, roupa, primeiros socorros, ferramentas, navegação, higiene, comunicação, luz e documentos. Inclui checklist imprimível e princípios de priorização por cenário.",
-    image: "/cursos/curso-bug-out-bag.webp",
-    category: "Equipamentos",
-    level: "Iniciante",
-    modules: 5,
-    hours: 6,
-    lessons: ["Filosofia do BOB", "Água e alimentação", "Primeiros socorros", "Ferramentas e navegação", "Documentos e comunicação"],
-  },
-];
-
-const CATEGORIES = ["Todos", "Fundamentos", "Água", "Bushcraft", "Navegação", "Equipamentos", "Mentalidade", "Campo", "Fogo", "Combate", "Abrigo"];
-
-const LEVELS = ["Todos", "Iniciante", "Intermediário", "Avançado"];
+import { COURSES, COURSE_CATEGORIES, COURSE_LEVELS, getFeaturedCourse, type Course } from "@/data/courses";
 
 const Cursos = () => {
   const [category, setCategory] = useState("Todos");
   const [level, setLevel] = useState("Todos");
   const [search, setSearch] = useState("");
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+
+  const featured = getFeaturedCourse();
 
   const filtered = useMemo(() => {
     let result = COURSES;
@@ -203,8 +41,6 @@ const Cursos = () => {
     }
     return result;
   }, [category, level, search]);
-
-  const featured = COURSES.find((c) => c.featured)!;
 
   return (
     <Layout>
@@ -250,8 +86,10 @@ const Cursos = () => {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button onClick={() => setActiveCourse(featured)} className="gap-2 uppercase tracking-wider text-xs">
-                <PlayCircle size={16} /> Ver módulos
+              <Button asChild className="gap-2 uppercase tracking-wider text-xs">
+                <Link to={`/cursos/${featured.id}`}>
+                  <PlayCircle size={16} /> Ver curso completo
+                </Link>
               </Button>
               <Link
                 to="/login"
@@ -289,7 +127,7 @@ const Cursos = () => {
         {/* Category filter */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
           <Filter size={14} className="text-muted-foreground" />
-          {CATEGORIES.map((cat) => (
+          {COURSE_CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
@@ -307,7 +145,7 @@ const Cursos = () => {
         {/* Level filter */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
           <span className="text-xs text-muted-foreground">Nível:</span>
-          {LEVELS.map((lv) => (
+          {COURSE_LEVELS.map((lv) => (
             <button
               key={lv}
               onClick={() => setLevel(lv)}
@@ -342,7 +180,7 @@ const Cursos = () => {
               className="group relative overflow-hidden rounded-xl border border-border bg-card hover:border-primary/50 transition-colors flex flex-col"
             >
               {/* Cover */}
-              <div className="relative aspect-[4/5] overflow-hidden">
+              <Link to={`/cursos/${course.id}`} className="block relative aspect-[4/5] overflow-hidden">
                 <img
                   src={course.image}
                   alt={course.title}
@@ -372,14 +210,11 @@ const Cursos = () => {
 
                 {/* Hover preview */}
                 <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => setActiveCourse(course)}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-heading uppercase tracking-wider text-xs px-4 py-2 rounded-md hover:opacity-90"
-                  >
-                    <PlayCircle size={14} /> Ver módulos
-                  </button>
+                  <span className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-heading uppercase tracking-wider text-xs px-4 py-2 rounded-md">
+                    <PlayCircle size={14} /> Ver curso completo
+                  </span>
                 </div>
-              </div>
+              </Link>
 
               {/* Body */}
               <div className="flex-1 p-5 flex flex-col">
@@ -397,15 +232,18 @@ const Cursos = () => {
 
                 {/* CTA */}
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Lock size={12} /> Acesso liberado após matrícula
-                  </span>
                   <button
                     onClick={() => setActiveCourse(course)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Layers size={12} /> Prévia dos módulos
+                  </button>
+                  <Link
+                    to={`/cursos/${course.id}`}
                     className="text-primary hover:underline text-xs font-semibold flex items-center gap-1"
                   >
                     Detalhes <ChevronRight size={12} />
-                  </button>
+                  </Link>
                 </div>
               </div>
             </motion.article>

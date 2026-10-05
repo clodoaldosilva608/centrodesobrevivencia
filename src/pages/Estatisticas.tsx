@@ -215,6 +215,22 @@ const Estatisticas = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Educational banner — Bug Out Bag infographic */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative overflow-hidden rounded-xl border border-border mt-8"
+        >
+          <img
+            src="/cursos/banner-bob-infografico.webp"
+            alt="Infográfico: como montar seu Bug Out Bag (BOB) — kit de emergência"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
+        </motion.div>
       </div>
     </Layout>
   );
