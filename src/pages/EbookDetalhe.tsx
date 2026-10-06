@@ -4,13 +4,20 @@ import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { ebooks } from "@/data/mockData";
 import { toOgImage } from "@/lib/ogImage";
-import { ArrowLeft, Download, BookOpen, User, FileText, Tag, ChevronDown } from "lucide-react";
+import { MANUAL_URL } from "@/lib/manual";
+import { useAppSetting } from "@/hooks/useAppSetting";
+import { ArrowLeft, Download, BookOpen, User, FileText, Tag, ChevronDown, ShoppingBag, Compass, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 const EbookDetalhe = () => {
   const { id } = useParams();
   const ebook = ebooks.find((e) => e.id === id);
   const [synopsisOpen, setSynopsisOpen] = useState(true);
+  const { value: downloadEnabled } = useAppSetting<"true" | "false">(
+    "ebooks_download_enabled",
+    "false"
+  );
+  const canDownload = downloadEnabled === "true";
 
   if (!ebook) {
     return (
@@ -122,28 +129,83 @@ const EbookDetalhe = () => {
               </motion.div>
             </div>
 
-            {/* Download button — abre o PDF em nova aba */}
-            {ebook.pdfUrl ? (
-              <motion.a
-                href={ebook.pdfUrl}
+            {/* Botão "Ler E-book" (leitura na plataforma via iframe) + download opcional */}
+            <div className="mt-8 flex flex-col gap-3">
+              {ebook.pdfUrl ? (
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex"
+                >
+                  <Link
+                    to={`/ler-ebook/${ebook.id}`}
+                    className="bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-3 w-fit text-base glow-orange"
+                  >
+                    <BookOpen size={20} /> Ler E-book Agora
+                  </Link>
+                </motion.div>
+              ) : (
+                <div className="bg-muted text-muted-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl inline-flex items-center gap-3 w-fit text-base">
+                  <BookOpen size={20} /> E-book em breve
+                </div>
+              )}
+
+              {/* Botão de download — só aparece se admin ativou */}
+              {canDownload && ebook.pdfUrl ? (
+                <motion.a
+                  href={ebook.pdfUrl}
+                  download={`${ebook.id}.pdf`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="border border-primary text-primary font-heading tracking-wider uppercase px-6 py-2.5 rounded-xl hover:bg-primary/10 transition-all inline-flex items-center gap-2 w-fit text-sm"
+                >
+                  <Download size={16} /> Baixar PDF
+                </motion.a>
+              ) : (
+                <p className="text-[11px] text-muted-foreground max-w-md">
+                  📖 Leitura exclusiva na plataforma. {canDownload ? "" : "Download disponível apenas para membros."}
+                </p>
+              )}
+            </div>
+
+            {/* CTAs complementares — Loja + Bússola */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                to="/equipamentos"
+                className="group border border-border rounded-xl p-4 hover:border-primary/50 transition-colors flex items-start gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                  <ShoppingBag size={18} className="text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-heading text-sm uppercase tracking-wider text-foreground">
+                    Visite a Loja
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Gear tático e ferramentas para sua próxima aventura
+                  </p>
+                </div>
+              </Link>
+              <a
+                href={MANUAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="mt-8 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-3 w-fit text-base glow-orange"
+                className="group border border-border rounded-xl p-4 hover:border-primary/50 transition-colors flex items-start gap-3"
               >
-                <Download size={20} /> Ler E-book Agora
-              </motion.a>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="mt-8 bg-muted text-muted-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl cursor-not-allowed inline-flex items-center gap-3 w-fit text-base"
-                disabled
-              >
-                <Download size={20} /> E-book em breve
-              </motion.button>
-            )}
+                <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                  <Compass size={18} className="text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-heading text-sm uppercase tracking-wider text-foreground flex items-center gap-1">
+                    App Bússola
+                    <ExternalLink size={10} className="opacity-60" />
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Manual do Sobrevivente — bússola tática no seu bolso
+                  </p>
+                </div>
+              </a>
+            </div>
           </motion.div>
         </div>
 

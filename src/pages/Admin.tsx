@@ -3320,6 +3320,33 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
     }
   };
 
+  // Setting toggle: ebooks_download_enabled ('true' | 'false')
+  const {
+    value: ebooksDownloadValue,
+    loading: loadingEbooksDownload,
+    setValue: setEbooksDownload,
+    reload: reloadEbooksDownload,
+  } = useAppSetting<"true" | "false">("ebooks_download_enabled", "false");
+
+  const canDownloadEbooks = ebooksDownloadValue === "true";
+
+  const toggleEbooksDownload = async () => {
+    setSavingSetting(true);
+    const next = canDownloadEbooks ? "false" : "true";
+    const result = await setEbooksDownload(next);
+    setSavingSetting(false);
+    if (result.ok) {
+      toast.success(
+        next === "true"
+          ? "Download de e-books ATIVADO — botão 'Baixar PDF' visível"
+          : "Download de e-books DESATIVADO — somente leitura na plataforma"
+      );
+      reloadEbooksDownload();
+    } else {
+      toast.error(`Erro: ${result.error}`);
+    }
+  };
+
   // Load lessons for selected course
   const loadLessons = useCallback(async (courseId: string) => {
     setLoading(true);
@@ -3608,6 +3635,54 @@ function CoursesSection({ onCountsChanged }: { onCountsChanged?: () => void }) {
                     "Desativar"
                   ) : (
                     "Ativar matrículas"
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* E-books download toggle — controla botão "Baixar PDF" vs "Somente leitura" */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <h3 className="font-heading text-sm uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+              <BookOpen size={14} className="text-primary" /> E-books — modo de leitura
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-xl">
+              Controla como os usuários interagem com os e-books nas páginas de detalhe.
+              Em <strong>"Somente leitura"</strong>, apenas o botão "Ler E-book Agora" aparece (leitura via iframe na plataforma).
+              Em <strong>"Download liberado"</strong>, botão "Baixar PDF" adicional aparece.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {loadingEbooksDownload ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <span
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                    canDownloadEbooks
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                  }`}
+                >
+                  {canDownloadEbooks ? "● Download liberado" : "● Somente leitura"}
+                </span>
+                <Button
+                  onClick={toggleEbooksDownload}
+                  disabled={savingSetting}
+                  size="sm"
+                  variant={canDownloadEbooks ? "outline" : "default"}
+                  className="gap-1 text-xs h-8"
+                >
+                  {savingSetting ? (
+                    <><Loader2 size={12} className="animate-spin" /> Salvando...</>
+                  ) : canDownloadEbooks ? (
+                    "Bloquear download"
+                  ) : (
+                    "Liberar download"
                   )}
                 </Button>
               </>

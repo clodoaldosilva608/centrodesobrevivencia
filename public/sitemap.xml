@@ -31,6 +31,16 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://centrodesobrevivencia.vercel.app/ler-ebook/manual-sobrevivencia-selva</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://centrodesobrevivencia.vercel.app/ebooks/:id</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://centrodesobrevivencia.vercel.app/jogos</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

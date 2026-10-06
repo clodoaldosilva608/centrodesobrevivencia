@@ -15,6 +15,7 @@ import CursoDetalhe from "./pages/CursoDetalhe";
 import MeusCursos from "./pages/MeusCursos";
 import Ebooks from "./pages/Ebooks";
 import EbookDetalhe from "./pages/EbookDetalhe";
+import LerEbook from "./pages/LerEbook";
 import Jogos from "./pages/Jogos";
 import JogoDetalhe from "./pages/JogoDetalhe";
 import Simulador from "./pages/Simulador";
@@ -85,6 +86,7 @@ const App = () => {
                   />
                   <Route path="/ebooks" element={<Ebooks />} />
                   <Route path="/ebooks/:id" element={<EbookDetalhe />} />
+                  <Route path="/ler-ebook/:id" element={<LerEbook />} />
                   <Route path="/jogos" element={<Jogos />} />
                   <Route path="/jogos/simulador-sobrevivencia-floresta" element={<SimuladorFloresta />} />
                   <Route path="/jogos/:id" element={<JogoDetalhe />} />
