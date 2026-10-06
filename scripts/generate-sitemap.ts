@@ -4,7 +4,7 @@ import { resolve } from "path";
 import { products, ebooks, games } from "../src/data/mockData";
 import { COURSES } from "../src/data/courses";
 
-const BASE_URL = process.env.SITE_URL ?? "https://centrodesobrevivencia.app";
+const BASE_URL = process.env.SITE_URL ?? "https://centrodesobrevivencia.vercel.app";
 
 interface SitemapEntry {
   path: string;

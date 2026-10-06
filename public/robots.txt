@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://centrodesobrevivencia.app/sitemap.xml
+Sitemap: https://centrodesobrevivencia.vercel.app/sitemap.xml

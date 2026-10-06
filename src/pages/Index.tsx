@@ -274,7 +274,7 @@ const Index = () => {
                     Abrir o app <ExternalLink size={14} />
                   </a>
                   <a
-                    href={`${MANUAL_URL}/boletim`}
+                    href={`${MANUAL_URL}/dashboard`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="border border-tactical-orange/50 text-tactical-orange font-heading tracking-wider uppercase px-6 py-3 rounded-md hover:bg-tactical-orange/10 transition-colors text-xs"
