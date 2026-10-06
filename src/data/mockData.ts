@@ -20,6 +20,7 @@ export interface Ebook {
   pages: number;
   category: string;
   image: string;
+  pdfUrl?: string;
 }
 
 export interface Game {
@@ -417,6 +418,7 @@ export const ebooks: Ebook[] = [
     pages: 342,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/mochila-tatica-45l.pdf",
   },
   {
     id: "bushcraft-iniciantes",
@@ -427,6 +429,7 @@ export const ebooks: Ebook[] = [
     pages: 218,
     category: "Bushcraft para Iniciantes",
     image: "https://images.unsplash.com/photo-1476611338391-6f395a0ebc7b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/bushcraft-iniciantes.pdf",
   },
   {
     id: "acampamento-selvagem",
@@ -437,6 +440,7 @@ export const ebooks: Ebook[] = [
     pages: 186,
     category: "Técnicas de Acampamento",
     image: "https://images.unsplash.com/photo-1504851149312-7a075b496cc7?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/acampamento-selvagem.pdf",
   },
   {
     id: "encontrando-agua",
@@ -447,6 +451,7 @@ export const ebooks: Ebook[] = [
     pages: 156,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1432405972618-c6b0cfba8673?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/encontrando-agua.pdf",
   },
   {
     id: "primeiros-socorros-extremos",
@@ -457,6 +462,7 @@ export const ebooks: Ebook[] = [
     pages: 284,
     category: "Primeiros Socorros na Natureza",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/primeiros-socorros-extremos.pdf",
   },
   {
     id: "tecnicas-fogo-natureza",
@@ -467,6 +473,7 @@ export const ebooks: Ebook[] = [
     pages: 168,
     category: "Bushcraft para Iniciantes",
     image: "https://images.unsplash.com/photo-1475483768296-6163e08872a1?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/tecnicas-fogo-natureza.pdf",
   },
   {
     id: "construindo-abrigos-naturais",
@@ -477,6 +484,7 @@ export const ebooks: Ebook[] = [
     pages: 194,
     category: "Bushcraft para Iniciantes",
     image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/construindo-abrigos-naturais.pdf",
   },
   {
     id: "orientacao-navegacao-natural",
@@ -487,6 +495,7 @@ export const ebooks: Ebook[] = [
     pages: 230,
     category: "Orientação e Navegação",
     image: "https://images.unsplash.com/photo-1504700610630-ac6aeeeaa801?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/orientacao-navegacao-natural.pdf",
   },
   {
     id: "preparacao-emergencias-urbanas",
@@ -497,6 +506,7 @@ export const ebooks: Ebook[] = [
     pages: 246,
     category: "Preparação para Emergências",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/preparacao-emergencias-urbanas.pdf",
   },
   {
     id: "plantas-comestiveis-brasil",
@@ -507,6 +517,7 @@ export const ebooks: Ebook[] = [
     pages: 380,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1476611338391-6f395a0ebc7b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/plantas-comestiveis-brasil.pdf",
   },
   {
     id: "nos-amarracoes-campo",
@@ -517,6 +528,7 @@ export const ebooks: Ebook[] = [
     pages: 142,
     category: "Bushcraft para Iniciantes",
     image: "https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/nos-amarracoes-campo.pdf",
   },
   {
     id: "sobrevivencia-inverno",
@@ -527,6 +539,7 @@ export const ebooks: Ebook[] = [
     pages: 198,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/sobrevivencia-inverno.pdf",
   },
   {
     id: "caca-pesca-sobrevivencia",
@@ -537,6 +550,7 @@ export const ebooks: Ebook[] = [
     pages: 264,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1432405972618-c6b0cfba8673?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/caca-pesca-sobrevivencia.pdf",
   },
   {
     id: "medicina-natural-campo",
@@ -547,6 +561,7 @@ export const ebooks: Ebook[] = [
     pages: 210,
     category: "Primeiros Socorros na Natureza",
     image: "https://images.unsplash.com/photo-1476611338391-6f395a0ebc7b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/medicina-natural-campo.pdf",
   },
   {
     id: "cartografia-leitura-terreno",
@@ -557,6 +572,7 @@ export const ebooks: Ebook[] = [
     pages: 176,
     category: "Orientação e Navegação",
     image: "https://images.unsplash.com/photo-1504700610630-ac6aeeeaa801?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/cartografia-leitura-terreno.pdf",
   },
   {
     id: "sobrevivencia-mar",
@@ -567,6 +583,7 @@ export const ebooks: Ebook[] = [
     pages: 222,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1432405972618-c6b0cfba8673?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/sobrevivencia-mar.pdf",
   },
   {
     id: "defesa-pessoal-campo",
@@ -577,6 +594,7 @@ export const ebooks: Ebook[] = [
     pages: 188,
     category: "Sobrevivência na Selva",
     image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/defesa-pessoal-campo.pdf",
   },
   {
     id: "kit-72h-montagem",
@@ -587,6 +605,7 @@ export const ebooks: Ebook[] = [
     pages: 134,
     category: "Preparação para Emergências",
     image: "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/kit-72h-montagem.pdf",
   },
   {
     id: "meteorologia-campo",
@@ -597,6 +616,7 @@ export const ebooks: Ebook[] = [
     pages: 160,
     category: "Orientação e Navegação",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/meteorologia-campo.pdf",
   },
   {
     id: "psicologia-sobrevivencia",
@@ -607,6 +627,7 @@ export const ebooks: Ebook[] = [
     pages: 202,
     category: "Preparação para Emergências",
     image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=560&fit=crop",
+    pdfUrl: "/ebooks/psicologia-sobrevivencia.pdf",
   },
 ];
 

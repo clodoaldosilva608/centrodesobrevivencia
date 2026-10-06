@@ -122,14 +122,28 @@ const EbookDetalhe = () => {
               </motion.div>
             </div>
 
-            {/* Download button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="mt-8 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-3 w-fit text-base glow-orange"
-            >
-              <Download size={20} /> Baixar E-book Grátis
-            </motion.button>
+            {/* Download button — abre o PDF em nova aba */}
+            {ebook.pdfUrl ? (
+              <motion.a
+                href={ebook.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="mt-8 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-3 w-fit text-base glow-orange"
+              >
+                <Download size={20} /> Ler E-book Agora
+              </motion.a>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="mt-8 bg-muted text-muted-foreground font-heading tracking-wider uppercase px-8 py-4 rounded-xl cursor-not-allowed inline-flex items-center gap-3 w-fit text-base"
+                disabled
+              >
+                <Download size={20} /> E-book em breve
+              </motion.button>
+            )}
           </motion.div>
         </div>
 
