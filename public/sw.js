@@ -21,7 +21,7 @@
  * para forçar limpeza dos caches antigos via activate event.
  */
 
-const CACHE_VERSION = "v5-2026-10-04-versioned-url";
+const CACHE_VERSION = "v6-2026-10-06-landing-poster";
 const CACHE_NAME = `survival-hub-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [

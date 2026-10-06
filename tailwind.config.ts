@@ -22,6 +22,8 @@ export default {
         heading: ["Oswald", "sans-serif"],
         body: ["Source Sans 3", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        poster: ["Anton", "Oswald", "sans-serif"],
+        brush: ["Permanent Marker", "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",
