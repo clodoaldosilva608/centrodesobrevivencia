@@ -1,57 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Identidade visual alinhada ao app "Manual do Sobrevivente" (versão atual):
+ * charcoal neutro #121212, laranja tático #FF6728, olive #4E5A42, vermelho tático #D40924.
+ * Valores convertidos do design system oklch do app para HSL (Tailwind 3).
+ */
+
 @layer base {
   :root,
   .dark {
-    --background: 120 5% 8%;
-    --foreground: 40 20% 90%;
+    /* #121212 deep charcoal */
+    --background: 0 0% 7%;
+    --foreground: 47 23% 92%;
 
-    --card: 120 5% 12%;
-    --card-foreground: 40 20% 90%;
+    --card: 60 6% 10%;
+    --card-foreground: 47 23% 92%;
 
-    --popover: 120 5% 10%;
-    --popover-foreground: 40 20% 90%;
+    --popover: 40 7% 8%;
+    --popover-foreground: 47 23% 92%;
 
-    --primary: 28 90% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* #FF6728 emergency orange — cor-assinatura do Manual */
+    --primary: 18 100% 58%;
+    /* texto escuro sobre laranja, como no app (accent-foreground charcoal) */
+    --primary-foreground: 0 0% 7%;
 
-    --secondary: 120 20% 18%;
-    --secondary-foreground: 40 20% 90%;
+    --secondary: 43 10% 14%;
+    --secondary-foreground: 47 23% 92%;
 
-    --muted: 120 5% 16%;
-    --muted-foreground: 40 15% 70%;
+    --muted: 60 5% 13%;
+    --muted-foreground: 49 8% 60%;
 
-    --accent: 140 40% 30%;
-    --accent-foreground: 40 20% 95%;
+    /* #4E5A42 olive tático */
+    --accent: 90 15% 31%;
+    --accent-foreground: 47 23% 92%;
 
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 0 0% 100%;
+    /* #D40924 tactical red */
+    --destructive: 352 92% 43%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 120 8% 20%;
-    --input: 120 8% 20%;
-    --ring: 28 90% 50%;
+    --border: 60 3% 17%;
+    --input: 45 5% 16%;
+    --ring: 18 100% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.375rem;
 
-    --earth: 30 30% 25%;
-    --earth-foreground: 35 30% 75%;
-    --forest: 140 35% 22%;
-    --forest-foreground: 140 30% 70%;
-    --tactical: 120 5% 15%;
-    --tactical-foreground: 40 10% 70%;
+    --earth: 90 15% 31%;
+    --earth-foreground: 90 15% 75%;
+    --forest: 124 30% 22%;
+    --forest-foreground: 124 25% 70%;
+    --tactical: 0 0% 9%;
+    --tactical-foreground: 49 8% 60%;
 
-    --sidebar-background: 120 5% 10%;
-    --sidebar-foreground: 40 20% 90%;
-    --sidebar-primary: 28 90% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 120 5% 16%;
-    --sidebar-accent-foreground: 40 20% 90%;
-    --sidebar-border: 120 8% 20%;
-    --sidebar-ring: 28 90% 50%;
+    /* Cores táticas do Manual (oklch -> hsl) */
+    --tactical-orange: 18 100% 58%;
+    --tactical-olive: 90 15% 31%;
+    --tactical-red: 352 92% 43%;
+    --tactical-amber: 42 91% 48%;
+    --tactical-blue: 197 67% 48%;
+    --tactical-green: 124 37% 51%;
+
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 47 12% 91%;
+    --sidebar-primary: 18 100% 58%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 60 5% 13%;
+    --sidebar-accent-foreground: 47 23% 92%;
+    --sidebar-border: 60 3% 17%;
+    --sidebar-ring: 18 100% 58%;
   }
 
   .light {
@@ -64,8 +83,15 @@
     --popover: 40 15% 95%;
     --popover-foreground: 120 10% 15%;
 
-    --primary: 28 90% 48%;
+    --primary: 16 95% 45%;
     --primary-foreground: 0 0% 100%;
+
+    --tactical-orange: 16 95% 45%;
+    --tactical-olive: 90 15% 40%;
+    --tactical-red: 352 85% 45%;
+    --tactical-amber: 42 91% 42%;
+    --tactical-blue: 197 67% 40%;
+    --tactical-green: 124 37% 40%;
 
     --secondary: 120 15% 88%;
     --secondary-foreground: 120 10% 25%;
@@ -81,7 +107,7 @@
 
     --border: 120 8% 82%;
     --input: 120 8% 82%;
-    --ring: 28 90% 48%;
+    --ring: 16 95% 45%;
 
     --earth: 30 20% 80%;
     --earth-foreground: 35 30% 30%;
@@ -108,7 +134,12 @@
   body {
     @apply bg-background text-foreground font-body;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading;
   }
 }
@@ -116,19 +147,45 @@
 @layer utilities {
   .text-gradient-survival {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(28 90% 50%), hsl(40 80% 55%));
+    /* laranja tático -> âmbar tático (identidade do Manual) */
+    background-image: linear-gradient(
+      135deg,
+      hsl(18 100% 58%),
+      hsl(42 91% 48%)
+    );
   }
   .bg-gradient-hero {
-    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 50%, hsl(var(--background)) 100%);
+    background: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      hsl(var(--secondary)) 50%,
+      hsl(var(--background)) 100%
+    );
   }
   .bg-gradient-card {
-    background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--background)));
+    background: linear-gradient(
+      145deg,
+      hsl(var(--card)),
+      hsl(var(--background))
+    );
   }
   .glow-orange {
-    box-shadow: 0 0 20px hsl(28 90% 50% / 0.3);
+    box-shadow: 0 0 20px hsl(18 100% 58% / 0.3);
   }
   .border-glow {
-    border-color: hsl(28 90% 50% / 0.3);
+    border-color: hsl(18 100% 58% / 0.3);
+  }
+  /* HUD do Manual: grade tática + painel de vidro escuro */
+  .tactical-grid {
+    background-image:
+      linear-gradient(to right, hsl(60 3% 17% / 0.45) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(60 3% 17% / 0.45) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .hud-panel {
+    background: hsl(0 0% 7% / 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border));
   }
 }
 
@@ -141,7 +198,7 @@
   color: hsl(var(--foreground)) !important;
   border: 1px solid hsl(var(--border)) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
 }
 .leaflet-popup-tip {
   background: hsl(var(--card)) !important;

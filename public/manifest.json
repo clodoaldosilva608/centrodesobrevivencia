@@ -4,8 +4,8 @@
   "description": "Hub definitivo para bushcraft, sobrevivencialismo e aventura",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#141916",
-  "theme_color": "#e87b1e",
+  "background_color": "#121212",
+  "theme_color": "#FF6728",
   "orientation": "portrait-primary",
   "icons": [
     {

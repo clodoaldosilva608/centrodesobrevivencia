@@ -2,7 +2,12 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -16,6 +21,7 @@ export default {
       fontFamily: {
         heading: ["Oswald", "sans-serif"],
         body: ["Source Sans 3", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -62,6 +68,12 @@ export default {
         tactical: {
           DEFAULT: "hsl(var(--tactical))",
           foreground: "hsl(var(--tactical-foreground))",
+          orange: "hsl(var(--tactical-orange))",
+          olive: "hsl(var(--tactical-olive))",
+          red: "hsl(var(--tactical-red))",
+          amber: "hsl(var(--tactical-amber))",
+          blue: "hsl(var(--tactical-blue))",
+          green: "hsl(var(--tactical-green))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
