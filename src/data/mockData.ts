@@ -412,7 +412,7 @@ export const ebooks: Ebook[] = [
   {
     id: "manual-sobrevivencia-selva",
     title: "Manual Completo de Sobrevivência na Selva",
-    author: "Carlos Mendes",
+    author: "Clodoaldo C Silva",
     description: "Guia completo com técnicas ancestrais e modernas para sobreviver em ambientes de selva tropical.",
     synopsis: "Este manual abrangente cobre tudo que você precisa saber para sobreviver em ambientes de selva tropical. Desde identificação de plantas comestíveis até construção de abrigos, técnicas de orientação sem bússola, obtenção e purificação de água, e primeiros socorros improvisados. Inclui ilustrações detalhadas e casos reais de sobrevivência.",
     pages: 342,
@@ -423,7 +423,7 @@ export const ebooks: Ebook[] = [
   {
     id: "bushcraft-iniciantes",
     title: "Bushcraft para Iniciantes",
-    author: "Ana Ribeiro",
+    author: "Clodoaldo C Silva",
     description: "Aprenda desde o básico: fogo, abrigo, água e navegação na natureza.",
     synopsis: "O guia perfeito para quem está começando no mundo do bushcraft. Aprenda a fazer fogo com métodos primitivos, construir abrigos com materiais naturais, encontrar e purificar água, e navegar usando o sol e as estrelas. Cada capítulo inclui exercícios práticos progressivos.",
     pages: 218,
@@ -434,7 +434,7 @@ export const ebooks: Ebook[] = [
   {
     id: "acampamento-selvagem",
     title: "Guia de Acampamento Selvagem",
-    author: "Pedro Alves",
+    author: "Clodoaldo C Silva",
     description: "Tudo sobre acampar em locais remotos com segurança e conforto mínimo.",
     synopsis: "Um guia prático para acampamento em áreas selvagens e remotas. Cobre seleção de local, montagem de acampamento, gestão de alimentos em ambientes silvestres, proteção contra animais, técnicas de leave-no-trace e planejamento de rotas.",
     pages: 186,
@@ -445,7 +445,7 @@ export const ebooks: Ebook[] = [
   {
     id: "encontrando-agua",
     title: "Encontrando Água na Natureza",
-    author: "Marcos Silva",
+    author: "Clodoaldo C Silva",
     description: "Técnicas para localizar, purificar e armazenar água em situações de sobrevivência.",
     synopsis: "A água é o recurso mais crítico em situações de sobrevivência. Este livro ensina a identificar sinais de água na paisagem, coletar água da chuva, orvalho e vegetação, métodos de purificação improvisados e construção de filtros naturais.",
     pages: 156,
@@ -456,7 +456,7 @@ export const ebooks: Ebook[] = [
   {
     id: "primeiros-socorros-extremos",
     title: "Primeiros Socorros em Situações Extremas",
-    author: "Dra. Juliana Costa",
+    author: "Clodoaldo C Silva",
     description: "Procedimentos médicos de emergência quando não há hospitais por perto.",
     synopsis: "Escrito por uma médica especialista em medicina de expedição, este livro cobre tratamento de fraturas, hemorragias, queimaduras, picadas de animais, hipotermia e desidratação em ambientes remotos onde socorro profissional não está disponível.",
     pages: 284,
@@ -467,7 +467,7 @@ export const ebooks: Ebook[] = [
   {
     id: "tecnicas-fogo-natureza",
     title: "Técnicas de Fogo na Natureza",
-    author: "Roberto Nascimento",
+    author: "Clodoaldo C Silva",
     description: "Domine todas as formas de iniciar e manter fogo em qualquer condição.",
     synopsis: "Do arco de fricção ao pedernal, da lente solar ao método por percussão. Este guia cobre mais de 15 métodos de fazer fogo, preparação de iscas naturais, construção de fogueiras para diferentes propósitos e segurança no manejo do fogo.",
     pages: 168,
@@ -478,7 +478,7 @@ export const ebooks: Ebook[] = [
   {
     id: "construindo-abrigos-naturais",
     title: "Construindo Abrigos Naturais",
-    author: "Fernando Oliveira",
+    author: "Clodoaldo C Silva",
     description: "Projete e construa abrigos usando apenas recursos encontrados na natureza.",
     synopsis: "Aprenda a avaliar o terreno, selecionar o local ideal e construir diferentes tipos de abrigos: lean-to, A-frame, debris hut, abrigo de neve e mais. Cada projeto inclui lista de materiais naturais, tempo estimado e nível de proteção oferecido.",
     pages: 194,
@@ -489,7 +489,7 @@ export const ebooks: Ebook[] = [
   {
     id: "orientacao-navegacao-natural",
     title: "Orientação e Navegação Natural",
-    author: "Tenente Ricardo Braga",
+    author: "Clodoaldo C Silva",
     description: "Navegue sem GPS usando estrelas, sol, vegetação e formações do terreno.",
     synopsis: "Manual completo de navegação natural escrito por um instrutor militar. Cobre leitura de mapas topográficos, uso de bússola, navegação por estrelas e sol, indicadores naturais de direção e técnicas de orientação em diferentes biomas brasileiros.",
     pages: 230,
@@ -500,7 +500,7 @@ export const ebooks: Ebook[] = [
   {
     id: "preparacao-emergencias-urbanas",
     title: "Preparação para Emergências Urbanas",
-    author: "Sgt. Márcio Torres",
+    author: "Clodoaldo C Silva",
     description: "Como se preparar para desastres naturais e emergências em áreas urbanas.",
     synopsis: "Guia prático de preparação para emergências em ambiente urbano: montagem de kit de 72h, plano familiar de emergência, purificação de água doméstica, armazenamento de alimentos de longa duração e segurança pessoal em cenários de crise.",
     pages: 246,
@@ -511,7 +511,7 @@ export const ebooks: Ebook[] = [
   {
     id: "plantas-comestiveis-brasil",
     title: "Plantas Comestíveis e Medicinais do Brasil",
-    author: "Profa. Maria Helena Duarte",
+    author: "Clodoaldo C Silva",
     description: "Identificação e uso de plantas nativas brasileiras para alimentação e medicina.",
     synopsis: "Catálogo ilustrado com mais de 120 espécies de plantas comestíveis e medicinais encontradas nos biomas brasileiros. Cada entrada inclui fotos, descrição botânica, habitat, época de coleta, formas de preparo e contraindicações.",
     pages: 380,
@@ -522,7 +522,7 @@ export const ebooks: Ebook[] = [
   {
     id: "nos-amarracoes-campo",
     title: "Nós e Amarrações para o Campo",
-    author: "Paulo Cordeiro",
+    author: "Clodoaldo C Silva",
     description: "Guia visual de mais de 50 nós essenciais para camping e sobrevivência.",
     synopsis: "Aprenda os 50 nós mais úteis para atividades outdoor, desde nós básicos de fixação até amarrações complexas para construção de estruturas. Cada nó inclui diagrama passo a passo, aplicações práticas e dicas de quando usar cada tipo.",
     pages: 142,
@@ -533,7 +533,7 @@ export const ebooks: Ebook[] = [
   {
     id: "sobrevivencia-inverno",
     title: "Sobrevivência em Climas Frios",
-    author: "André Polar",
+    author: "Clodoaldo C Silva",
     description: "Técnicas específicas para sobreviver em ambientes de baixas temperaturas.",
     synopsis: "Manual especializado em sobrevivência em frio extremo. Aborda hipotermia, construção de abrigos de neve, obtenção de água por derretimento, vestimenta em camadas, sinalização em neve e navegação em condições de visibilidade reduzida.",
     pages: 198,
@@ -544,7 +544,7 @@ export const ebooks: Ebook[] = [
   {
     id: "caca-pesca-sobrevivencia",
     title: "Caça e Pesca de Sobrevivência",
-    author: "Geraldo Mateiro",
+    author: "Clodoaldo C Silva",
     description: "Técnicas primitivas e modernas de obtenção de alimento proteico na natureza.",
     synopsis: "Aprenda a construir armadilhas, arcos e flechas improvisados, anzóis naturais e redes de pesca artesanais. Cobre identificação de rastros, comportamento animal, técnicas de abate e preparo de carnes em campo.",
     pages: 264,
@@ -555,7 +555,7 @@ export const ebooks: Ebook[] = [
   {
     id: "medicina-natural-campo",
     title: "Medicina Natural de Campo",
-    author: "Dra. Beatriz Ramalho",
+    author: "Clodoaldo C Silva",
     description: "Remédios naturais e tratamentos com plantas para situações de campo.",
     synopsis: "Guia prático de fitoterapia de emergência. Ensina a identificar e preparar remédios com plantas para dores, infecções, problemas digestivos, picadas e ferimentos. Inclui receitas de cataplasmas, infusões e tinturas feitas com plantas brasileiras.",
     pages: 210,
@@ -566,7 +566,7 @@ export const ebooks: Ebook[] = [
   {
     id: "cartografia-leitura-terreno",
     title: "Cartografia e Leitura de Terreno",
-    author: "Cap. Ronaldo Menezes",
+    author: "Clodoaldo C Silva",
     description: "Interprete mapas topográficos e leia o terreno como um profissional.",
     synopsis: "Manual detalhado sobre leitura de cartas topográficas, interpretação de curvas de nível, cálculo de distâncias e azimutes, uso de coordenadas UTM e geográficas, e planejamento de rotas em terrenos variados.",
     pages: 176,
@@ -577,7 +577,7 @@ export const ebooks: Ebook[] = [
   {
     id: "sobrevivencia-mar",
     title: "Sobrevivência no Mar e Litoral",
-    author: "Cmte. Vasco Neto",
+    author: "Clodoaldo C Silva",
     description: "Técnicas de sobrevivência em ambientes costeiros e naufrágios.",
     synopsis: "Da sobrevivência em balsas após naufrágio à obtenção de alimento e água doce no litoral. Cobre navegação por correntes, sinalização marítima, pesca oceânica de emergência e primeiros socorros para afogamento e descompressão.",
     pages: 222,
@@ -588,7 +588,7 @@ export const ebooks: Ebook[] = [
   {
     id: "defesa-pessoal-campo",
     title: "Defesa Pessoal em Ambientes Selvagens",
-    author: "Maj. Diego Santana",
+    author: "Clodoaldo C Silva",
     description: "Proteção contra animais perigosos e ameaças na natureza.",
     synopsis: "Como se proteger de animais perigosos dos biomas brasileiros: cobras, aranhas, onças, jacarés e insetos. Inclui técnicas de prevenção, comportamento em encontros, primeiros socorros para envenenamentos e fabricação de repelentes naturais.",
     pages: 188,
@@ -599,7 +599,7 @@ export const ebooks: Ebook[] = [
   {
     id: "kit-72h-montagem",
     title: "Monte seu Kit de 72 Horas",
-    author: "Sérgio Prepper",
+    author: "Clodoaldo C Silva",
     description: "Guia definitivo para montar o kit de emergência perfeito.",
     synopsis: "Passo a passo para montar um kit de sobrevivência para 72 horas, cobrindo alimentação, hidratação, abrigo, comunicação, documentos e segurança. Inclui listas de verificação, recomendações de produtos e adaptações por clima e região.",
     pages: 134,
@@ -610,7 +610,7 @@ export const ebooks: Ebook[] = [
   {
     id: "meteorologia-campo",
     title: "Meteorologia de Campo",
-    author: "Prof. Cláudio Temporal",
+    author: "Clodoaldo C Silva",
     description: "Preveja o tempo observando nuvens, ventos e sinais da natureza.",
     synopsis: "Aprenda a prever mudanças climáticas observando formações de nuvens, direção dos ventos, comportamento animal e indicadores atmosféricos. Inclui guia visual de tipos de nuvens e tabelas de previsão baseadas em observação.",
     pages: 160,
@@ -621,7 +621,7 @@ export const ebooks: Ebook[] = [
   {
     id: "psicologia-sobrevivencia",
     title: "Psicologia da Sobrevivência",
-    author: "Dr. Henrique Almeida",
+    author: "Clodoaldo C Silva",
     description: "O lado mental da sobrevivência: medo, estresse e tomada de decisão.",
     synopsis: "Análise psicológica de situações de sobrevivência real. Cobre gerenciamento do medo e pânico, tomada de decisão sob pressão, resiliência mental, técnicas de mindfulness em situações extremas e como manter a motivação quando tudo parece perdido.",
     pages: 202,
