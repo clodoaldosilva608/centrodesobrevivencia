@@ -66,6 +66,15 @@ const Footer = () => (
             <Link to="/comunidade" className="block text-xs text-muted-foreground hover:text-primary transition-colors">
               Comunidade
             </Link>
+            {/* Apoie — contribuição voluntária que mantém o Manual gratuito */}
+            <a
+              href={`${MANUAL_URL}/colaboradores`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Apoie o projeto ↗
+            </a>
             {/* Acesso admin discreto no rodapé — não toma espaço na navbar */}
             <Link
               to="/admin"

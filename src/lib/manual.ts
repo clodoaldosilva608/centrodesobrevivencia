@@ -8,7 +8,7 @@
  */
 
 export const MANUAL_URL =
-  import.meta.env.VITE_MANUAL_URL ?? "https://manual-do-sobrevivente.vercel.app";
+  import.meta.env.VITE_MANUAL_URL ?? "https://manualdosobrevivente.vercel.app";
 
 /** Abre o Manual do Sobrevivente em nova aba. */
 export function openManual(): void {
