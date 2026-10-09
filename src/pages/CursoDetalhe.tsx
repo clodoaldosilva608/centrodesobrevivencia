@@ -327,7 +327,10 @@ const CursoDetalhe = () => {
               {!isAuthenticated ? (
                 <Button asChild className="gap-2 uppercase tracking-wider text-xs h-11">
                   <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
-                    Entrar para comprar <ChevronRight size={14} />
+                    {priceInfo && priceInfo.price_cents > 0
+                      ? "Entrar para comprar"
+                      : "Entrar para matricular"}{" "}
+                    <ChevronRight size={14} />
                   </Link>
                 </Button>
               ) : !effectiveEnrolled ? (
@@ -596,7 +599,10 @@ const CursoDetalhe = () => {
                 {!isAuthenticated ? (
                   <Button asChild className="w-full gap-2 uppercase tracking-wider text-xs h-11">
                     <Link to="/login" state={{ from: `/cursos/${course.id}` }}>
-                      Entrar para comprar <ChevronRight size={14} />
+                      {priceInfo && priceInfo.price_cents > 0
+                        ? "Entrar para comprar"
+                        : "Entrar para matricular"}{" "}
+                      <ChevronRight size={14} />
                     </Link>
                   </Button>
                 ) : !effectiveEnrolled ? (
@@ -620,7 +626,11 @@ const CursoDetalhe = () => {
                 )}
                 <p className="text-[11px] text-muted-foreground text-center">
                   <Lock size={10} className="inline mr-1" />
-                  {effectiveEnrolled ? "Acesso liberado" : "Acesso após pagamento"}
+                  {effectiveEnrolled
+                    ? "Acesso liberado"
+                    : priceInfo && priceInfo.price_cents > 0
+                      ? "Acesso após pagamento"
+                      : "Acesso gratuito e imediato"}
                 </p>
               </div>
             </div>
