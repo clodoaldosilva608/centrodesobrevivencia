@@ -169,9 +169,12 @@ async function main() {
   async function checkImage(url: string): Promise<number> {
     if (imageStatus.has(url)) return imageStatus.get(url)!;
     try {
-      let res = await fetch(url, { method: "HEAD" });
+      // URLs relativas de og:image (ex.: "/og-enchente.jpg") precisam do base;
+      // fetch node puro falha e devolve 0 para assets perfeitamente válidos.
+      const absoluto = new URL(url, `${BASE_URL}/`).href;
+      let res = await fetch(absoluto, { method: "HEAD" });
       if (res.status === 405 || res.status === 403) {
-        res = await fetch(url, { method: "GET" });
+        res = await fetch(absoluto, { method: "GET" });
       }
       imageStatus.set(url, res.status);
       return res.status;
@@ -187,6 +190,16 @@ async function main() {
 
   async function worker(browser: Browser) {
     const context = await browser.newContext();
+    // Salta o splash de boas-vindas (3s) — o validador testa a meta das
+    // rotas, não a tela de abertura; sem isto o snapshot captura o HTML
+    // estático do index.html e TODA rota falha como "/".
+    await context.addInitScript(() => {
+      try {
+        sessionStorage.setItem("sh_splash_seen", "1");
+      } catch {
+        /* contexto sem storage */
+      }
+    });
     const page = await context.newPage();
     while (queue.length) {
       const route = queue.shift();
@@ -298,6 +311,19 @@ async function checkRoute(
     await persistFailure(page, result);
     return result;
   }
+
+  // Aguarda o Helmet montar (og:url no head). networkidle dispara antes do
+  // React renderizar em rotas com dados assíncronos — sem esta espera o
+  // snapshot captura o head estático e a rota falha como pré-montagem.
+  await page
+    .waitForFunction(
+      () => !!document.head.querySelector('meta[property="og:url"]'),
+      undefined,
+      { timeout: 8_000 },
+    )
+    .catch(() => {
+      /* rota sem SEO declarado será reportada pelas checagens abaixo */
+    });
 
   const meta = await page.evaluate(() => {
     const get = (sel: string, attr: string) =>

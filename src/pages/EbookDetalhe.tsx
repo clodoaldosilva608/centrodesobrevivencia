@@ -22,6 +22,11 @@ const EbookDetalhe = () => {
   if (!ebook) {
     return (
       <Layout>
+        <SEO
+          title="E-book não encontrado"
+          description="O e-book buscado não está na biblioteca. Veja a coleção completa do Centro de Sobrevivência."
+          noIndex
+        />
         <div className="container mx-auto px-4 py-24 text-center">
           <BookOpen size={48} className="mx-auto text-muted-foreground/40 mb-4" />
           <p className="text-muted-foreground">E-book não encontrado.</p>

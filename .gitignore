@@ -74,3 +74,4 @@ test-results/
 *.tar.gz
 .next/
 .vercel
+scripts/validate-seo.cjs

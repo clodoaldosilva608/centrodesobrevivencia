@@ -17,10 +17,8 @@ const staticEntries: SitemapEntry[] = [
   { path: "/welcome", changefreq: "monthly", priority: "0.5" },
   { path: "/equipamentos", changefreq: "weekly", priority: "0.9" },
   { path: "/cursos", changefreq: "weekly", priority: "0.9" },
-  { path: "/perfil/meus-cursos", changefreq: "daily", priority: "0.6" },
   { path: "/ebooks", changefreq: "weekly", priority: "0.9" },
   { path: "/ler-ebook/manual-sobrevivencia-selva", changefreq: "monthly", priority: "0.5" },
-  { path: "/ebooks/:id", changefreq: "monthly", priority: "0.5" },
   { path: "/jogos", changefreq: "weekly", priority: "0.8" },
   { path: "/jogos/simulador-sobrevivencia-floresta", changefreq: "monthly", priority: "0.7" },
   { path: "/simulador", changefreq: "monthly", priority: "0.7" },
@@ -28,8 +26,12 @@ const staticEntries: SitemapEntry[] = [
   { path: "/desafios", changefreq: "weekly", priority: "0.8" },
   { path: "/comunidade", changefreq: "weekly", priority: "0.7" },
   { path: "/estatisticas", changefreq: "monthly", priority: "0.5" },
-  { path: "/bussola", changefreq: "monthly", priority: "0.6" },
   { path: "/visao-osiris", changefreq: "weekly", priority: "0.7" },
+  // Cluster editorial (Pack SEO do Hub) — páginas-pilar e artigos
+  { path: "/enchente-o-que-fazer", changefreq: "weekly", priority: "1.0" },
+  // Rotas protegidas (/perfil/meus-cursos, /bussola, /gis, /login) ficam FORA do
+  // sitemap: conteúdo atrás de autenticação não é indexável e um template
+  // "/ebooks/:id" no sitemap gerava probe de rota inexistente.
   { path: "/login", changefreq: "yearly", priority: "0.3" },
 ];
 

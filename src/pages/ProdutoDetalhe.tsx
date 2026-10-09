@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { supabase } from "@/lib/supabase";
+import { registrarEvento } from "@/lib/analytics";
 import { ArrowLeft, ExternalLink, Loader2, CheckCircle2 } from "lucide-react";
 
 interface Product {
@@ -64,7 +65,11 @@ const ProdutoDetalhe = () => {
   if (loading) {
     return (
       <Layout>
-        <SEO title="Carregando produto..." description="" />
+        <SEO
+          title="Carregando produto..."
+          description="Ficha completa de equipamento tático no Centro de Sobrevivência."
+          noIndex
+        />
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -75,7 +80,11 @@ const ProdutoDetalhe = () => {
   if (!product) {
     return (
       <Layout>
-        <SEO title="Produto não encontrado" description="" />
+        <SEO
+          title="Produto não encontrado"
+          description="O equipamento buscado não está no catálogo. Veja todos os itens do Centro de Sobrevivência."
+          noIndex
+        />
         <div className="container mx-auto px-4 py-24 text-center">
           <p className="text-muted-foreground">Produto não encontrado.</p>
           <Link to="/equipamentos" className="text-primary hover:underline mt-4 inline-block">Voltar</Link>
@@ -104,7 +113,10 @@ const ProdutoDetalhe = () => {
     <Layout>
       <SEO
         title={`${product.name} — Centro de Sobrevivência`}
-        description={product.description}
+        description={
+          product.description?.trim() ||
+          `${product.name}: ficha completa, especificações e compra no Centro de Sobrevivência.`
+        }
         image={product.image}
         type="product"
         jsonLd={jsonLd}
@@ -182,6 +194,12 @@ const ProdutoDetalhe = () => {
                 href={product.buyLink}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  registrarEvento("clique_comprar_loja", {
+                    produto: product.id,
+                    rede: product.affiliateNetwork ?? "direto",
+                  })
+                }
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-heading tracking-wider uppercase px-8 py-3 rounded-md hover:opacity-90 transition-opacity text-sm"
               >
                 <ExternalLink size={16} />

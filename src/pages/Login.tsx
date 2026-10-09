@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
+import { registrarEvento } from "@/lib/analytics";
 import { toast } from "sonner";
 
 type Mode = "choose" | "magic" | "password" | "signup";
@@ -78,6 +79,7 @@ const Login = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    registrarEvento("inicio_cadastro", { metodo: "email" });
     if (!name.trim() || !email.trim() || password.length < 6) {
       setError("Senha precisa ter no mínimo 6 caracteres.");
       return;

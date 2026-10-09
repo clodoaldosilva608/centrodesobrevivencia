@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       target_url:
-        description: "Published URL to audit (defaults to https://centrodesobrevivencia.app)"
+        description: "Published URL to audit (defaults to https://centrodesobrevivencia.vercel.app)"
         required: false
-        default: "https://centrodesobrevivencia.app"
+        default: "https://centrodesobrevivencia.vercel.app"
 
 jobs:
   validate:
@@ -35,7 +35,7 @@ jobs:
 
       - name: Build (also regenerates sitemap via prebuild hook)
         env:
-          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
+          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}
         run: bun run build
 
       - name: Install Playwright browsers
@@ -46,7 +46,7 @@ jobs:
         # Continue so we can ALWAYS upload the report, then enforce below.
         continue-on-error: true
         env:
-          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
+          SITE_URL: ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}
         run: bunx tsx scripts/validate-seo.ts
 
       - name: Upload SEO validation report (HTML + JSON, per-route failures)
@@ -105,11 +105,11 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/equipamentos
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/ebooks
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/jogos
-            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.app' }}/bussola
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}/equipamentos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}/ebooks
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}/jogos
+            ${{ github.event.inputs.target_url || 'https://centrodesobrevivencia.vercel.app' }}/enchente-o-que-fazer
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: ./.lighthouserc.json

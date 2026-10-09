@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,7 +30,9 @@ import Bussola from "./pages/Bussola";
 import Gis from "./pages/Gis";
 import Login from "./pages/Login";
 import VisaoOsiris from "./pages/VisaoOsiris";
+import GuiaEnchente from "./pages/GuiaEnchente";
 import NotFound from "./pages/NotFound";
+import { iniciarAnalytics, registrarPageview } from "./lib/analytics";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import EngagementNotification from "./components/EngagementNotification";
 import { AchievementNotifProvider } from "./contexts/AchievementNotifContext";
@@ -41,7 +43,17 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
+/** Envia page_view ao GA4 a cada troca de rota (só com VITE_GA4_ID definido). */
+const RastreadorRota = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    registrarPageview(pathname);
+  }, [pathname]);
+  return null;
+};
+
 const App = () => {
+  iniciarAnalytics();
   const [showSplash, setShowSplash] = useState(() => {
     const seen = sessionStorage.getItem("sh_splash_seen");
     return !seen;
@@ -64,6 +76,7 @@ const App = () => {
             </AnimatePresence>
             {!showSplash && (
               <BrowserRouter>
+                <RastreadorRota />
                 <OnboardingTutorial />
                 <EngagementNotification />
                 <PWAInstallBanner />
@@ -118,6 +131,8 @@ const App = () => {
                     }
                   />
                   <Route path="/visao-osiris" element={<VisaoOsiris />} />
+                  {/* Página-pilar do cluster SEO (Pack SEO do Hub) */}
+                  <Route path="/enchente-o-que-fazer" element={<GuiaEnchente />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

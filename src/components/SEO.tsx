@@ -17,7 +17,10 @@ interface SEOProps {
 
 const SEO = ({ title, description, image, type = "website", jsonLd, noIndex }: SEOProps) => {
   const { pathname } = useLocation();
-  const url = `${SITE_URL}${pathname}`;
+  // Canonical SEM barra final — rotas acessadas com "/" extra não devem
+  // se auto-canonicalizar com barra (duplicata aos olhos do Google).
+  const caminho = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const url = `${SITE_URL}${caminho}`;
   const finalImage = image || DEFAULT_OG_IMAGE;
   const finalTitle = title.length > 60 ? `${title.slice(0, 57)}...` : title;
   const finalDesc = description.length > 160 ? `${description.slice(0, 157)}...` : description;

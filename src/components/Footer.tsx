@@ -20,6 +20,7 @@ const Footer = () => (
               { label: "Equipamentos", path: "/equipamentos" },
               { label: "E-books", path: "/ebooks" },
               { label: "Jogos", path: "/jogos" },
+              { label: "Guia de enchentes", path: "/enchente-o-que-fazer" },
             ].map((l) => (
               <Link key={l.path} to={l.path} className="block text-xs text-muted-foreground hover:text-primary transition-colors">
                 {l.label}
